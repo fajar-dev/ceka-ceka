@@ -1,0 +1,94 @@
+:root {
+  --bg-color: #F8F6F2;
+  --text-color: #111111;
+  --mint-green: #B8F2D6;
+  --soft-yellow: #FCE8A1;
+  --pastel-blue: #C3E0F9;
+  --peach: #FDCFB7;
+  
+  --border-thick: 3px solid #111111;
+  --shadow-hard: 4px 4px 0px #111111;
+  --shadow-hard-sm: 2px 2px 0px #111111;
+  
+  --radius-xl: 16px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .outfit-font {
+  font-family: 'Outfit', sans-serif;
+}
+
+.neubrutal-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.neubrutal-box {
+  background-color: #ffffff;
+  border: var(--border-thick);
+  box-shadow: var(--shadow-hard);
+  border-radius: var(--radius-xl);
+}
+
+.neubrutal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 16px 24px;
+  border: var(--border-thick);
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  font-size: 1.125rem;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-hard);
+}
+
+.neubrutal-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #111111;
+}
+
+.neubrutal-btn.primary {
+  background-color: var(--mint-green);
+}
+
+.neubrutal-btn.ghost {
+  background-color: #ffffff;
+}
+
+.neubrutal-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: white;
+  border: 2px solid #111111;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-hard-sm);
+  z-index: 10;
+}
