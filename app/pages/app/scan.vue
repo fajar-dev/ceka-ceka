@@ -1,0 +1,554 @@
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { ArrowLeft, Camera, Image, RotateCw, X, Check, Sparkles } from '@lucide/vue'
+import { useCekaSettings } from '~/composables/useCekaSettings'
+
+const { t, loadSettings } = useCekaSettings()
+
+const videoRef = ref(null)
+const canvasRef = ref(null)
+const stream = ref(null)
+const cameraError = ref(null)
+const facingMode = ref('environment') // 'environment' (back camera) or 'user' (front camera)
+const isCaptured = ref(false)
+const capturedImage = ref(null)
+const fileInputRef = ref(null)
+const isScanning = ref(false)
+
+onMounted(() => {
+  loadSettings()
+  startCamera()
+})
+
+onUnmounted(() => {
+  stopCamera()
+})
+
+const startCamera = async () => {
+  stopCamera()
+  cameraError.value = null
+  
+  try {
+    const constraints = {
+      video: {
+        facingMode: facingMode.value,
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    }
+    
+    const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+    stream.value = mediaStream
+    if (videoRef.value) {
+      videoRef.value.srcObject = mediaStream
+    }
+  } catch (err) {
+    console.error('Error accessing camera:', err)
+    cameraError.value = t('cameraError')
+  }
+}
+
+const stopCamera = () => {
+  if (stream.value) {
+    stream.value.getTracks().forEach(track => track.stop())
+    stream.value = null
+  }
+}
+
+const toggleCamera = () => {
+  facingMode.value = facingMode.value === 'environment' ? 'user' : 'environment'
+  startCamera()
+}
+
+const takePhoto = () => {
+  if (!videoRef.value || !canvasRef.value) return
+  
+  const video = videoRef.value
+  const canvas = canvasRef.value
+  const ctx = canvas.getContext('2d')
+  
+  // Match canvas dimensions to video feed
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  
+  // Draw current frame
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+  
+  capturedImage.value = canvas.toDataURL('image/jpeg')
+  isCaptured.value = true
+  stopCamera()
+}
+
+const triggerFileSelect = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    capturedImage.value = e.target.result
+    isCaptured.value = true
+    stopCamera()
+  }
+  reader.readAsDataURL(file)
+}
+
+const retakePhoto = () => {
+  isCaptured.value = false
+  capturedImage.value = null
+  startCamera()
+}
+
+const processOCR = () => {
+  isScanning.value = true
+  
+  // Simulate AI scanning receipt
+  setTimeout(() => {
+    isScanning.value = false
+    
+    // Save new scanned bill to localStorage
+    const savedHistory = localStorage.getItem('ceka_history')
+    const history = savedHistory ? JSON.parse(savedHistory) : []
+    
+    const randomAmount = Math.floor(Math.random() * 150000) + 50000 // 50k to 200k
+    const newBill = {
+      id: Date.now(),
+      title: 'Pindai Struk AI - ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toISOString().substring(0, 10),
+      peopleCount: 3,
+      amount: randomAmount,
+      iconType: 'file',
+      iconBg: 'icon-bg-0'
+    }
+    
+    history.unshift(newBill)
+    localStorage.setItem('ceka_history', JSON.stringify(history))
+    
+    // Redirect to app
+    useRouter().push('/app')
+  }, 2500)
+}
+</script>
+
+<template>
+  <div class="neubrutal-container scan-page-container">
+    <!-- Camera Feed (Full Screen Behind) -->
+    <div class="camera-fullscreen-wrapper">
+      <div v-show="!isCaptured" class="video-container">
+        <video ref="videoRef" autoplay playsinline class="camera-video"></video>
+        
+        <!-- Scan Guides / Viewfinder Overlay -->
+        <div class="viewfinder-overlay">
+          <div class="viewfinder-corners">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+          </div>
+          <div class="scanning-animation-bar"></div>
+          <div class="scan-hint">{{ t('scanHint') }}</div>
+        </div>
+      </div>
+
+      <!-- Preview Captured Image -->
+      <div v-show="isCaptured" class="preview-container">
+        <img :src="capturedImage" alt="Captured Receipt" class="captured-preview-img" />
+        
+        <!-- Scan Loader Overlay -->
+        <div v-if="isScanning" class="ocr-scanning-overlay">
+          <div class="scanning-spinner">
+            <Sparkles class="sparkle-icon" :size="36" />
+            <span>{{ t('ocrScanning') }}</span>
+          </div>
+          <div class="ocr-scanning-line"></div>
+        </div>
+      </div>
+
+      <!-- Camera Error Message -->
+      <div v-if="cameraError && !isCaptured" class="camera-error-message neubrutal-box">
+        <p>{{ cameraError }}</p>
+        <button class="neubrutal-btn primary retry-btn" @click="startCamera">{{ t('retryBtn') }}</button>
+      </div>
+    </div>
+
+    <!-- Floating Top Header -->
+    <header class="app-header floating-header">
+      <NuxtLink to="/app" class="back-btn neubrutal-box header-btn">
+        <ArrowLeft :size="20" strokeWidth="2.5" />
+      </NuxtLink>
+      <h1 class="page-title dark-title">{{ t('scanTitle') }}</h1>
+      <div style="width: 42px;"></div> <!-- Spacer -->
+    </header>
+
+    <!-- Gallery Input File (Hidden) -->
+    <input 
+      type="file" 
+      ref="fileInputRef" 
+      accept="image/*" 
+      class="hidden-file-input" 
+      @change="handleFileSelect"
+    />
+
+    <!-- Hidden canvas for capturing video frames -->
+    <canvas ref="canvasRef" style="display: none;"></canvas>
+
+    <!-- Floating Bottom Controls -->
+    <!-- Live Camera Controls -->
+    <section v-if="!isCaptured" class="controls-section floating-controls">
+      <button class="control-btn circle neubrutal-box" @click="triggerFileSelect" :title="language === 'en' ? 'Select from Gallery' : 'Pilih dari Galeri'">
+        <Image :size="22" strokeWidth="2.5" />
+      </button>
+      
+      <button class="capture-btn neubrutal-box" @click="takePhoto" :title="language === 'en' ? 'Take Photo' : 'Ambil Foto'">
+        <div class="inner-circle">
+          <Camera :size="28" strokeWidth="2.5" />
+        </div>
+      </button>
+      
+      <button class="control-btn circle neubrutal-box" @click="toggleCamera" :title="language === 'en' ? 'Switch Camera' : 'Ubah Kamera'">
+        <RotateCw :size="22" strokeWidth="2.5" />
+      </button>
+    </section>
+
+    <!-- Capture Confirmation Controls -->
+    <section v-else class="controls-section floating-controls confirmation">
+      <button class="neubrutal-btn ghost action-btn-confirm" @click="retakePhoto" :disabled="isScanning">
+        <X :size="18" strokeWidth="2.5" />
+        <span>{{ t('retakeBtn') }}</span>
+      </button>
+      
+      <button class="neubrutal-btn primary action-btn-confirm" @click="processOCR" :disabled="isScanning">
+        <Check :size="18" strokeWidth="3" />
+        <span>{{ t('processBtn') }}</span>
+      </button>
+    </section>
+  </div>
+</template>
+
+<style scoped>
+.scan-page-container {
+  background-color: #000 !important; /* Pure black for camera backdrop */
+  color: white;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-fullscreen-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.video-container, .preview-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.captured-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Viewfinder Overlay (Native Immersive View) */
+.viewfinder-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.viewfinder-corners {
+  position: relative;
+  width: 280px;
+  height: 420px;
+  max-width: 80%;
+  max-height: 55%;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+}
+
+.corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 4px solid var(--mint-green);
+  z-index: 6;
+}
+
+.corner.tl { top: -3px; left: -3px; border-right: none; border-bottom: none; }
+.corner.tr { top: -3px; right: -3px; border-left: none; border-bottom: none; }
+.corner.bl { bottom: -3px; left: -3px; border-right: none; border-top: none; }
+.corner.br { bottom: -3px; right: -3px; border-left: none; border-top: none; }
+
+.scanning-animation-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, transparent, var(--mint-green), transparent);
+  box-shadow: 0 0 10px var(--mint-green);
+  animation: scan-line-full 3s ease-in-out infinite;
+}
+
+@keyframes scan-line-full {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
+
+.scan-hint {
+  position: absolute;
+  bottom: 160px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  color: white;
+}
+
+/* Floating Top Header */
+.floating-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  padding: 24px 24px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-btn {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+  color: #111;
+  text-decoration: none;
+  background: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-hard-sm);
+  border: 3px solid #111;
+}
+
+.back-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #111;
+}
+
+.dark-title {
+  color: white;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Hidden inputs */
+.hidden-file-input {
+  display: none;
+}
+
+/* Floating Bottom Controls */
+.floating-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+  padding: 48px 24px 48px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.floating-controls.confirmation {
+  gap: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.control-btn.circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  color: #111;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 3px 3px 0px #000;
+  border: 3px solid #000;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.control-btn.circle:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.capture-btn {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--mint-green);
+  color: #111;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.capture-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px #000;
+}
+
+.inner-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px dashed #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn-confirm {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 #000;
+  border: 3px solid #000;
+}
+
+.action-btn-confirm:active {
+  box-shadow: 1px 1px 0 #000;
+}
+
+.action-btn-confirm span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* OCR AI Scanning Overlay */
+.ocr-scanning-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+}
+
+.scanning-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: white;
+  text-align: center;
+}
+
+.sparkle-icon {
+  animation: rotate-sparkle 1.5s ease-in-out infinite;
+  color: var(--soft-yellow);
+}
+
+@keyframes rotate-sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(180deg); }
+}
+
+.ocr-scanning-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--soft-yellow);
+  box-shadow: 0 0 15px var(--soft-yellow);
+  animation: scan-full-height 1.5s ease-in-out infinite;
+}
+
+@keyframes scan-full-height {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+/* Errors */
+.camera-error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  background: white;
+  color: #111;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  z-index: 30;
+}
+
+.camera-error-message p {
+  font-weight: 700;
+  color: #EF4444;
+}
+
+.retry-btn {
+  padding: 10px 20px;
+  box-shadow: var(--shadow-hard-sm);
+  font-size: 0.95rem;
+}
+</style>

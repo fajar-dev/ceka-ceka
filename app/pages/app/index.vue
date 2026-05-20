@@ -1,14 +1,76 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Settings, LogOut, Camera, PenTool, Sparkles, FileText, Pizza, Coffee, User, Plus } from '@lucide/vue'
+import { useCekaSettings } from '~/composables/useCekaSettings'
+
+const { currency, loadSettings, t } = useCekaSettings()
 
 const isDropdownOpen = ref(false)
+const friends = ref([])
+const history = ref([])
+
+onMounted(() => {
+  loadSettings()
+  
+  // Load Friends
+  const savedFriends = localStorage.getItem('ceka_friends')
+  if (savedFriends) {
+    friends.value = JSON.parse(savedFriends)
+  } else {
+    friends.value = [
+      { id: 1, name: 'Budi Pekerti', avatarBg: 'avatar-bg-0' },
+      { id: 2, name: 'Siti Rahma', avatarBg: 'avatar-bg-1' },
+      { id: 3, name: 'Joko Widodo', avatarBg: 'avatar-bg-2' },
+      { id: 4, name: 'Dewi Lestari', avatarBg: 'avatar-bg-3' },
+      { id: 5, name: 'Rian Adriansyah', avatarBg: 'avatar-bg-0' }
+    ]
+    localStorage.setItem('ceka_friends', JSON.stringify(friends.value))
+  }
+
+  // Load History
+  const savedHistory = localStorage.getItem('ceka_history')
+  if (savedHistory) {
+    history.value = JSON.parse(savedHistory)
+  } else {
+    history.value = [
+      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0' },
+      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1' },
+      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2' }
+    ]
+    localStorage.setItem('ceka_history', JSON.stringify(history.value))
+  }
+})
+
+const getInitials = (name) => {
+  if (!name) return ''
+  return name.trim().split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+}
+
+const getIconComponent = (type) => {
+  switch (type) {
+    case 'pizza': return Pizza
+    case 'coffee': return Coffee
+    default: return FileText
+  }
+}
+
+const formatCurrency = (val) => {
+  const formatted = new Intl.NumberFormat('id-ID').format(val)
+  return `${currency.value} ${formatted}`
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+}
 </script>
 
 <template>
   <div class="neubrutal-container">
     <header class="app-header">
-      <h1 class="page-title">Dashboard</h1>
+      <h1 class="page-title">CekaCeka</h1>
       <div class="user-profile-wrapper">
         <div class="dropdown-overlay" v-if="isDropdownOpen" @click="isDropdownOpen = false"></div>
         
@@ -18,14 +80,14 @@ const isDropdownOpen = ref(false)
         
         <!-- Dropdown Menu -->
         <div class="avatar-dropdown neubrutal-box" v-if="isDropdownOpen">
-          <div class="dropdown-item" @click="isDropdownOpen = false">
+          <NuxtLink to="/app/setting" class="dropdown-item" @click="isDropdownOpen = false" style="text-decoration: none; display: flex; align-items: center; color: inherit;">
             <Settings :size="18" />
-            <span style="margin-left: 4px;">Setting</span>
-          </div>
+            <span style="margin-left: 6px; font-weight: 850;">{{ t('settingsTitle') }}</span>
+          </NuxtLink>
           <div class="dropdown-divider"></div>
-          <div class="dropdown-item text-red" @click="isDropdownOpen = false">
+          <div class="dropdown-item text-red" @click="isDropdownOpen = false" style="display: flex; align-items: center;">
             <LogOut :size="18" />
-            <span style="margin-left: 4px;">Keluar</span>
+            <span style="margin-left: 6px; font-weight: 850;">{{ language === 'en' ? 'Logout' : 'Keluar' }}</span>
           </div>
         </div>
       </div>
@@ -36,9 +98,9 @@ const isDropdownOpen = ref(false)
       <section class="summary-section">
         <div class="summary-card neubrutal-box bg-mint">
           <div class="summary-content">
-            <p class="summary-label">Tagihan Aktif</p>
+            <p class="summary-label">{{ t('unpaidBill') }}</p>
             <h2 class="summary-amount">Rp 450.000</h2>
-            <div class="summary-badge">2 belum lunas</div>
+            <div class="summary-badge">2 {{ t('waitingPayment') }}</div>
           </div>
           <div class="summary-illustration">
             <div class="mini-receipt">
@@ -55,70 +117,65 @@ const isDropdownOpen = ref(false)
 
       <!-- Main Actions -->
       <section class="action-section">
-        <button class="neubrutal-btn secondary action-btn">
-          <span><Camera :size="18" /> Ambil Foto</span>
-        </button>
-        <button class="neubrutal-btn ghost action-btn">
-          <span><PenTool :size="18" /> Buat Manual</span>
-        </button>
+        <NuxtLink to="/app/scan" class="neubrutal-btn secondary action-btn" style="text-decoration: none; color: inherit;">
+          <span><Camera :size="18" /> {{ t('scanReceipt') }}</span>
+        </NuxtLink>
+        <NuxtLink to="/app/bill" class="neubrutal-btn ghost action-btn" style="text-decoration: none; color: inherit;">
+          <span><PenTool :size="18" /> {{ t('inputManual') }}</span>
+        </NuxtLink>
       </section>
 
       <!-- Friends List (Horizontal Scroll) -->
       <section class="friends-section">
         <div class="section-header">
-          <h2 class="section-title">Teman</h2>
-          <span class="see-all">Lihat Semua</span>
+          <h2 class="section-title">{{ t('myFriends') }}</h2>
+          <NuxtLink to="/app/friend" class="see-all">{{ t('viewAll') }}</NuxtLink>
         </div>
         
         <div class="friends-scroll-container">
           <!-- Add friend button -->
-          <div class="friend-item add-friend">
+          <NuxtLink to="/app/friend" class="friend-item add-friend" style="text-decoration: none; color: inherit;">
             <div class="friend-avatar neubrutal-box add-avatar">
               <Plus :size="28" strokeWidth="3" />
             </div>
-            <span class="friend-name">Tambah</span>
-          </div>
+          </NuxtLink>
 
-          <!-- Friend items (Mock Data) -->
-          <div class="friend-item" v-for="i in 5" :key="i">
-            <div class="friend-avatar neubrutal-box" :class="`avatar-bg-${i % 4}`">
-              <span class="avatar-initial">T{{ i }}</span>
+          <!-- Friend items (Dynamic Data) -->
+          <div class="friend-item" v-for="friend in friends" :key="friend.id">
+            <div class="friend-avatar neubrutal-box" :class="friend.avatarBg">
+              <span class="avatar-initial">{{ getInitials(friend.name) }}</span>
             </div>
-            <span class="friend-name">Teman {{ i }}</span>
+            <span class="friend-name">{{ friend.name.split(' ')[0] }}</span>
           </div>
         </div>
       </section>
 
       <!-- History Section -->
       <section class="history-section">
-        <h2 class="section-title">History Split Bill</h2>
+        <div class="section-header">
+          <h2 class="section-title">{{ t('recentHistory') }}</h2>
+          <NuxtLink to="/app/history" class="see-all">{{ t('viewAll') }}</NuxtLink>
+        </div>
         
         <div class="history-list">
-          <div class="history-card neubrutal-box">
-            <div class="history-icon icon-bg-0"><FileText :size="24" /></div>
-            <div class="history-details">
-              <h3 class="history-title">Makan Siang Kopitiam</h3>
-              <p class="history-date">12 Mei 2026 • 3 Orang</p>
-            </div>
-            <div class="history-amount">Rp 120.000</div>
+          <div v-if="history.length === 0" class="empty-state neubrutal-box">
+            <p>{{ t('noHistory') }}</p>
           </div>
           
-          <div class="history-card neubrutal-box">
-            <div class="history-icon icon-bg-1"><Pizza :size="24" /></div>
-            <div class="history-details">
-              <h3 class="history-title">Pesen Pizza Malam</h3>
-              <p class="history-date">10 Mei 2026 • 5 Orang</p>
+          <div 
+            v-else 
+            v-for="item in history.slice(0, 3)" 
+            :key="item.id" 
+            class="history-card neubrutal-box"
+          >
+            <div class="history-icon" :class="item.iconBg">
+              <component :is="getIconComponent(item.iconType)" :size="24" />
             </div>
-            <div class="history-amount">Rp 250.000</div>
-          </div>
-
-          <div class="history-card neubrutal-box">
-            <div class="history-icon icon-bg-2"><Coffee :size="24" /></div>
             <div class="history-details">
-              <h3 class="history-title">Nongkrong Cafe</h3>
-              <p class="history-date">08 Mei 2026 • 2 Orang</p>
+              <h3 class="history-title">{{ item.title }}</h3>
+              <p class="history-date">{{ formatDate(item.date) }} • {{ item.peopleCount }} {{ t('friendLabel') }}</p>
             </div>
-            <div class="history-amount">Rp 85.000</div>
+            <div class="history-amount">{{ formatCurrency(item.amount) }}</div>
           </div>
         </div>
       </section>

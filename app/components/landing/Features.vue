@@ -1,20 +1,22 @@
 <script setup>
 import { ScanSearch, Coins, Users } from '@lucide/vue'
+import { useCekaSettings } from '~/composables/useCekaSettings'
+const { t } = useCekaSettings()
 </script>
 
 <template>
   <div class="features-grid">
     <div class="feature-card bg-blue">
       <div class="feature-icon"><ScanSearch :size="20" /></div>
-      <span class="feature-text">Scan Struk<br/>Otomatis</span>
+      <span class="feature-text" v-html="t('featureScanTitle')"></span>
     </div>
     <div class="feature-card bg-yellow">
       <div class="feature-icon"><Coins :size="20" /></div>
-      <span class="feature-text">Hitung<br/>Pajak & Tip</span>
+      <span class="feature-text" v-html="t('featureTaxTitle')"></span>
     </div>
     <div class="feature-card bg-peach">
       <div class="feature-icon"><Users :size="20" /></div>
-      <span class="feature-text">Share ke<br/>Teman</span>
+      <span class="feature-text" v-html="t('featureSplitTitle')"></span>
     </div>
   </div>
 </template>

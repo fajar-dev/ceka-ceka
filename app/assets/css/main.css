@@ -1,14 +1,19 @@
 :root {
   --bg-color: #F8F6F2;
   --text-color: #111111;
+  --text-color-muted: #666666;
+  --box-bg: #ffffff;
+  --box-bg-alt: #FCFAF6;
+  --border-color: #111111;
+  
   --mint-green: #B8F2D6;
   --soft-yellow: #FCE8A1;
   --pastel-blue: #C3E0F9;
   --peach: #FDCFB7;
   
-  --border-thick: 3px solid #111111;
-  --shadow-hard: 4px 4px 0px #111111;
-  --shadow-hard-sm: 2px 2px 0px #111111;
+  --border-thick: 3px solid var(--border-color);
+  --shadow-hard: 4px 4px 0px var(--border-color);
+  --shadow-hard-sm: 2px 2px 0px var(--border-color);
   
   --radius-xl: 16px;
   --radius-lg: 12px;
@@ -45,7 +50,7 @@ h1, h2, h3, h4, h5, h6, .outfit-font {
 }
 
 .neubrutal-box {
-  background-color: #ffffff;
+  background-color: var(--box-bg);
   border: var(--border-thick);
   box-shadow: var(--shadow-hard);
   border-radius: var(--radius-xl);
@@ -69,7 +74,7 @@ h1, h2, h3, h4, h5, h6, .outfit-font {
 
 .neubrutal-btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0px #111111;
+  box-shadow: 2px 2px 0px var(--border-color);
 }
 
 .neubrutal-btn.primary {
@@ -77,18 +82,524 @@ h1, h2, h3, h4, h5, h6, .outfit-font {
 }
 
 .neubrutal-btn.ghost {
-  background-color: #ffffff;
+  background-color: var(--box-bg);
 }
 
 .neubrutal-tag {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  background: white;
-  border: 2px solid #111111;
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 700;
   box-shadow: var(--shadow-hard-sm);
   z-index: 10;
+}
+
+/* Neubrutalist Dark Theme Variables & Styles */
+.dark-theme {
+  --bg-color: #121214; /* Clean premium deep space charcoal */
+  --text-color: #F4F4F5; /* Crisp readable zinc-100 */
+  --text-color-muted: #A1A1AA; /* Muted zinc-400 */
+  --box-bg: #1E1E22; /* Sleek charcoal card background */
+  --box-bg-alt: #2D2D35; /* Zinc-800 for empty slots and nested grids */
+  --border-color: #000000; /* Pure bold black borders for authentic comic/neubrutal look! */
+  
+  --mint-green: #34D399; /* Vibrant neon mint */
+  --soft-yellow: #FBBF24; /* Glowing gold yellow */
+  --pastel-blue: #60A5FA; /* Bright electric blue */
+  --peach: #FB923C; /* Hot neon peach */
+}
+
+/* Force all borders in dark theme to match the bold black borders variable */
+.dark-theme * {
+  border-color: var(--border-color) !important;
+}
+
+/* Base card backgrounds & card text colors */
+.dark-theme .neubrutal-box,
+.dark-theme .neubrutal-btn.ghost,
+.dark-theme .neubrutal-tag,
+.dark-theme .form-section-card,
+.dark-theme .item-row-card,
+.dark-theme .invited-friends-list,
+.dark-theme .modal-content,
+.dark-theme .neubrutal-input,
+.dark-theme .neubrutal-select,
+.dark-theme .friend-chip,
+.dark-theme .summary-info-pill,
+.dark-theme .invite-friend-row-new,
+.dark-theme .assignment-friend-row-new,
+.dark-theme .dashboard-action-btn.secondary-action,
+.dark-theme .user-profile-wrapper .avatar-dropdown,
+.dark-theme .back-btn,
+.dark-theme .friend-row-card,
+.dark-theme .history-card,
+.dark-theme .fee-row-card,
+.dark-theme .settings-card,
+.dark-theme .theme-btn,
+.dark-theme .lang-btn,
+.dark-theme .currency-btn,
+.dark-theme .search-container,
+.dark-theme .confirm-dialog,
+.dark-theme .camera-error-message,
+.dark-theme .icon-option-btn,
+.dark-theme .add-avatar,
+.dark-theme .control-btn.circle {
+  background-color: var(--box-bg) !important;
+  color: var(--text-color) !important;
+}
+
+/* Perfecting dynamic solid shadows for neubrutalist depth */
+.dark-theme .neubrutal-box,
+.dark-theme .neubrutal-btn,
+.dark-theme .neubrutal-tag,
+.dark-theme .mini-receipt,
+.dark-theme .modal-content,
+.dark-theme .confirm-dialog,
+.dark-theme .camera-error-message {
+  box-shadow: var(--shadow-hard) !important;
+}
+
+.dark-theme .back-btn,
+.dark-theme .theme-btn,
+.dark-theme .lang-btn,
+.dark-theme .currency-btn,
+.dark-theme .theme-btn.active,
+.dark-theme .lang-btn.active,
+.dark-theme .currency-btn.active,
+.dark-theme .friend-avatar,
+.dark-theme .history-icon,
+.dark-theme .friend-chip,
+.dark-theme .summary-info-pill,
+.dark-theme .search-container,
+.dark-theme .icon-option-btn,
+.dark-theme .control-btn.circle,
+.dark-theme .neubrutal-input,
+.dark-theme .neubrutal-select,
+.dark-theme .search-input-new,
+.dark-theme .assigned-friend-chip,
+.dark-theme .fee-row-card,
+.dark-theme .auto-split-btn,
+.dark-theme .add-assignee-btn,
+.dark-theme .item-delete-btn,
+.dark-theme .fee-delete-btn,
+.dark-theme .calculated-preview-badge,
+.dark-theme .add-fee-btn-icon-only {
+  box-shadow: var(--shadow-hard-sm) !important;
+}
+
+/* Inputs & Forms styling in Dark Mode */
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  color: var(--text-color) !important;
+  background-color: var(--box-bg) !important;
+}
+
+.dark-theme input::placeholder {
+  color: var(--text-color-muted) !important;
+}
+
+.dark-theme .empty-invited-friends,
+.dark-theme .empty-fees-notice,
+.dark-theme .empty-assignment-notice,
+.dark-theme .empty-state,
+.dark-theme .empty-history {
+  background: var(--box-bg-alt) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color-muted) !important;
+}
+
+/* Ensure all text labels and elements have premium readability */
+.dark-theme .stat-label,
+.dark-theme .item-index-badge,
+.dark-theme .chip-name,
+.dark-theme .chip-name-mini,
+.dark-theme .form-label,
+.dark-theme .section-title,
+.dark-theme .section-title-nested,
+.dark-theme .modal-subtitle,
+.dark-theme .assignment-summary-title,
+.dark-theme .preview-label,
+.dark-theme .fees-subtitle,
+.dark-theme .status-text,
+.dark-theme .total-label,
+.dark-theme .empty-state p,
+.dark-theme .search-icon-new,
+.dark-theme .dropdown-item span,
+.dark-theme .friend-name,
+.dark-theme .friend-phone,
+.dark-theme .friend-email,
+.dark-theme .history-title,
+.dark-theme .history-meta,
+.dark-theme .history-date,
+.dark-theme .history-amount,
+.dark-theme .page-title,
+.dark-theme .setting-label-title,
+.dark-theme .setting-desc,
+.dark-theme .lang-text,
+.dark-theme .currency-symbol,
+.dark-theme .confirm-title,
+.dark-theme .confirm-text,
+.dark-theme .total-val,
+.dark-theme .main-title,
+.dark-theme .subtitle,
+.dark-theme .see-all {
+  color: var(--text-color) !important;
+}
+
+/* Protect colorful neubrutalist accents and primary elements so they remain highly legible! */
+.dark-theme .bg-mint,
+.dark-theme .bg-mint *,
+.dark-theme .bg-soft-yellow,
+.dark-theme .bg-soft-yellow *,
+.dark-theme .bg-pastel-blue,
+.dark-theme .bg-pastel-blue *,
+.dark-theme .bg-peach,
+.dark-theme .bg-peach *,
+.dark-theme .bg-blue,
+.dark-theme .bg-blue *,
+.dark-theme .bg-yellow,
+.dark-theme .bg-yellow *,
+.dark-theme .neubrutal-tag,
+.dark-theme .neubrutal-tag *,
+.dark-theme .avatar-bg-0,
+.dark-theme .avatar-bg-0 *,
+.dark-theme .avatar-bg-1,
+.dark-theme .avatar-bg-1 *,
+.dark-theme .avatar-bg-2,
+.dark-theme .avatar-bg-2 *,
+.dark-theme .avatar-bg-3,
+.dark-theme .avatar-bg-3 *,
+.dark-theme .icon-bg-0,
+.dark-theme .icon-bg-0 *,
+.dark-theme .icon-bg-1,
+.dark-theme .icon-bg-1 *,
+.dark-theme .icon-bg-2,
+.dark-theme .icon-bg-2 *,
+.dark-theme .neubrutal-btn.primary,
+.dark-theme .neubrutal-btn.primary *,
+.dark-theme .modal-submit-btn-new,
+.dark-theme .save-btn,
+.dark-theme .invite-btn-icon-only,
+.dark-theme .add-fee-btn-icon-only,
+.dark-theme .dashboard-action-btn.primary-action,
+.dark-theme .theme-btn.active,
+.dark-theme .lang-btn.active,
+.dark-theme .currency-btn.active,
+.dark-theme .confirm-btn-yes {
+  color: #000000 !important; /* Always keep text black on colorful neon backgrounds */
+}
+
+/* Elegant dropdown divider override for dark theme */
+.dark-theme .dropdown-divider {
+  background: var(--box-bg-alt) !important;
+}
+
+/* Prevent bright neon background classes from turning dark in dark mode */
+.dark-theme .bg-mint { background-color: var(--mint-green) !important; }
+.dark-theme .bg-soft-yellow { background-color: var(--soft-yellow) !important; }
+.dark-theme .bg-pastel-blue { background-color: var(--pastel-blue) !important; }
+.dark-theme .bg-peach { background-color: var(--peach) !important; }
+.dark-theme .bg-blue { background-color: var(--pastel-blue) !important; }
+.dark-theme .bg-yellow { background-color: var(--soft-yellow) !important; }
+
+.dark-theme .avatar-bg-0 { background-color: var(--mint-green) !important; }
+.dark-theme .avatar-bg-1 { background-color: var(--pastel-blue) !important; }
+.dark-theme .avatar-bg-2 { background-color: var(--soft-yellow) !important; }
+.dark-theme .avatar-bg-3 { background-color: var(--peach) !important; }
+
+.dark-theme .icon-bg-0 { background-color: var(--pastel-blue) !important; }
+.dark-theme .icon-bg-1 { background-color: var(--peach) !important; }
+.dark-theme .icon-bg-2 { background-color: var(--soft-yellow) !important; }
+
+/* Powerhouse global dark theme SVG icon color overrides */
+.dark-theme svg:not(.bg-mint svg):not(.bg-soft-yellow svg):not(.bg-pastel-blue svg):not(.bg-peach svg):not(.bg-blue svg):not(.bg-yellow svg):not(.neubrutal-btn.primary svg):not(.confirm-btn-yes svg):not(.summary-card svg):not(.friend-avatar svg):not(.history-icon svg) {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .add-avatar svg {
+  color: var(--text-color) !important;
+}
+
+/* Ensure avatar initials remain sharp and black on neon circles */
+.dark-theme .friend-avatar * {
+  color: #000000 !important;
+}
+
+/* Global input focus override in dark mode to prevent white-on-white text */
+.dark-theme .neubrutal-input:focus,
+.dark-theme .neubrutal-select:focus,
+.dark-theme textarea:focus {
+  background-color: var(--box-bg-alt) !important;
+  color: var(--text-color) !important;
+}
+
+/* Modal text and close buttons overrides for absolute dark theme clarity */
+.dark-theme .modal-content,
+.dark-theme .modal-content * {
+  color: var(--text-color);
+}
+
+.dark-theme .modal-title,
+.dark-theme .form-label,
+.dark-theme .close-modal-btn,
+.dark-theme .close-modal-btn svg {
+  color: var(--text-color) !important;
+}
+
+/* Premium Neubrutalist Action Icon Buttons (Edit/Delete) Overrides */
+.dark-theme .action-icon-btn.edit {
+  background-color: var(--soft-yellow) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .action-icon-btn.delete {
+  background-color: #EF4444 !important; /* Bold neon cherry red */
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .action-icon-btn svg {
+  color: #000000 !important; /* Keep icons highly contrast black */
+}
+
+/* Checklist and active selection row overrides in dark theme modals */
+.dark-theme .invite-friend-row-new.selected {
+  background-color: var(--soft-yellow) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .invite-friend-row-new.selected * {
+  color: #000000 !important;
+}
+
+.dark-theme .assignment-friend-row-new.active {
+  background-color: var(--mint-green) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .assignment-friend-row-new.active * {
+  color: #000000 !important;
+}
+
+/* Ensure checkbox icons remain highly legible black */
+.dark-theme .custom-checkbox-neubrutal svg,
+.dark-theme .checkbox-box svg {
+  color: #000000 !important;
+}
+
+/* Confirm Cancel dialog styling upgrades */
+.dark-theme .confirm-icon-wrapper {
+  background-color: #EF4444 !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 3px 3px 0px var(--border-color) !important;
+}
+
+.dark-theme .confirm-icon-wrapper svg {
+  color: #000000 !important;
+}
+
+/* Premium Search Field overrides for maximum contrast & beauty */
+.dark-theme .search-icon,
+.dark-theme .search-icon-new {
+  color: var(--text-color) !important;
+  opacity: 0.8 !important;
+}
+
+.dark-theme input::placeholder,
+.dark-theme select::placeholder,
+.dark-theme textarea::placeholder {
+  color: #88888F !important;
+  opacity: 0.85 !important;
+}
+
+.dark-theme input.search-input,
+.dark-theme input.search-input-new {
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+  background: var(--box-bg) !important;
+}
+
+/* Ensure participant names in list/modals turn white in dark mode, but turn black when selected/active */
+.dark-theme .invite-name-new,
+.dark-theme .assignment-name-new {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .invite-friend-row-new.selected .invite-name-new,
+.dark-theme .assignment-friend-row-new.active .assignment-name-new {
+  color: #000000 !important;
+}
+
+/* Premium Neubrutalist Action/Delete Button Overrides for Bill Page */
+.dark-theme .item-delete-btn,
+.dark-theme .fee-delete-btn {
+  background-color: #EF4444 !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .item-delete-btn svg,
+.dark-theme .fee-delete-btn svg {
+  color: #000000 !important;
+}
+
+/* Premium Item Allocation Modal Upgrades */
+.dark-theme .summary-info-pill .val {
+  color: var(--text-color) !important; /* Ensure quantity/total amounts in pills are white */
+}
+
+.dark-theme .auto-split-btn,
+.dark-theme .auto-split-btn * {
+  color: #000000 !important; /* Ensure auto split button text & users icon remain bold black */
+}
+
+.dark-theme .invite-avatar-new *,
+.dark-theme .assignment-avatar-new * {
+  color: #000000 !important; /* Keep initials inside checklist & portion circles sharp black */
+}
+
+.dark-theme .status-banner,
+.dark-theme .status-banner * {
+  color: #000000 !important; /* Keep the allocated portions banner text 100% readable black */
+}
+
+/* Premium Neubrutalist Inline Portions Card & Total Highlight Overrides */
+.dark-theme input.total-price-input {
+  background-color: #064E3B !important; /* Elegant dark forest green highlight instead of light mint */
+  color: var(--text-color) !important;
+}
+
+.dark-theme .portions-assignment-summary {
+  background-color: var(--box-bg-alt) !important; /* Charcoal alternative background instead of off-white */
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-hard-sm) !important;
+}
+
+.dark-theme .chip-avatar *,
+.dark-theme .chip-avatar-mini * {
+  color: #000000 !important; /* Keep avatar initials bold black inside all chips */
+}
+
+.dark-theme .chip-portion-badge {
+  color: #000000 !important; /* Keep portion multiplier badge (e.g. 1x) sharp black on soft yellow */
+}
+
+.dark-theme .remove-chip-btn-mini svg {
+  color: #EF4444 !important; /* Ensure delete icon remains high-contrast red */
+}
+
+/* Premium Portion Counter Capsule upgrades for outstanding modal contrast */
+.dark-theme .portion-counter-capsule {
+  background-color: var(--box-bg) !important; /* Elegant dark charcoal background instead of white */
+  border-color: var(--border-color) !important;
+  box-shadow: 1.5px 1.5px 0px var(--border-color) !important;
+}
+
+.dark-theme .capsule-btn.minus {
+  background-color: #EF4444 !important; /* Solid neon red */
+  color: #000000 !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .capsule-btn.plus {
+  background-color: #4ADE80 !important; /* Solid neon green */
+  color: #000000 !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .capsule-input {
+  color: var(--text-color) !important; /* Sleek white readable portion digit */
+}
+
+/* Premium Neubrutalist Tax, Discount & Fees Section Overrides */
+.dark-theme .tax-control-group {
+  background-color: var(--box-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-hard-sm) !important;
+}
+
+.dark-theme .tax-title {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .tax-toggle-tabs {
+  background-color: var(--box-bg-alt) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .tab-btn {
+  color: var(--text-color-muted) !important;
+}
+
+.dark-theme .tab-btn.active {
+  background-color: var(--box-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+  box-shadow: 1px 1px 0px var(--border-color) !important;
+}
+
+.dark-theme .suffix-label,
+.dark-theme .prefix-label {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .calculated-preview-badge {
+  background-color: var(--box-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-hard-sm) !important;
+}
+
+.dark-theme .calculated-preview-badge.active {
+  background-color: var(--box-bg-alt) !important;
+}
+
+.dark-theme .calculated-preview-badge * {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .calculated-preview-badge .value-red {
+  color: #EF4444 !important; /* Keep discount amount text vibrant red */
+}
+
+/* Premium Landing Page Theme Integrations */
+.dark-theme .main-title {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .subtitle {
+  color: var(--text-color-muted) !important;
+}
+
+/* Prevent landing page badges from turning dark kusam */
+.dark-theme .tag-vue { background-color: var(--mint-green) !important; }
+.dark-theme .tag-nuxt { background-color: var(--pastel-blue) !important; }
+.dark-theme .tag-api { background-color: var(--soft-yellow) !important; }
+.dark-theme .tag-ai { background-color: var(--peach) !important; }
+
+.dark-theme .tag-vue,
+.dark-theme .tag-nuxt,
+.dark-theme .tag-api,
+.dark-theme .tag-ai {
+  color: #000000 !important;
+}
+
+/* Protect landing page feature card icons */
+.dark-theme .feature-icon,
+.dark-theme .feature-icon svg {
+  color: #000000 !important;
+}
+
+/* Landing Illustration phone mockup & coins styling upgrades */
+.dark-theme .floating-coin,
+.dark-theme .chat-bubble,
+.dark-theme .chat-bubble svg {
+  color: #000000 !important; /* Keep symbols & smartphone icon highly contrast black */
+}
+
+.dark-theme .phone-mockup {
+  background-color: var(--box-bg-alt) !important; /* Beautiful dark screen phone mockup */
+  border-color: var(--border-color) !important;
 }
