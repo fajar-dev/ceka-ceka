@@ -1,24 +1,27 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { ArrowLeft, Plus, Trash2, Save, ShoppingBag, Hash, CreditCard, Users, UserPlus, X, Search, CheckSquare, Square, Percent, Coins } from '@lucide/vue'
+import { Plus, Trash2, ShoppingBag, Hash, CreditCard, Users, UserPlus, X, Search, CheckSquare, Percent, Coins } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
+import { useCekaFriends } from '~/composables/useCekaFriends'
+import type { Friend, BillItem, OtherFee, Bill } from '~/types'
 
 const { currency, loadSettings, t, language } = useCekaSettings()
+const { allFriends, loadFriends, getInitials, getFriendDetails } = useCekaFriends()
 
-const bill = ref({
+const bill = ref<Bill>({
   title: '',
   date: '',
   category: 'file',
   items: [
     { name: '', price: '', quantity: 1, totalPrice: '', assignments: {} }
   ],
-  taxType: 'percent', // default percent
+  taxType: 'percent',
   taxPercent: '',
   taxManual: '',
-  discountType: 'manual', // default manual
+  discountType: 'manual',
   discountPercent: '',
   discountManual: '',
-  otherFees: [] // array of { name: '', amount: '' }
+  otherFees: []
 })
 
 const categories = computed(() => [
@@ -28,13 +31,16 @@ const categories = computed(() => [
 ])
 
 // Friends split list state
-const allFriends = ref([])
-const selectedFriendIds = ref([])
+const selectedFriendIds = ref<(string | number)[]>([])
 const showInviteModal = ref(false)
 const inviteSearchQuery = ref('')
 
 // Item assignment modal state
-const activeAssignItemIndex = ref(null)
+const activeAssignItemIndex = ref<number | null>(null)
+const activeAssignItem = computed((): BillItem | null => {
+  if (activeAssignItemIndex.value === null) return null
+  return bill.value.items[activeAssignItemIndex.value] || null
+})
 const showAssignModal = ref(false)
 
 const showCancelConfirmModal = ref(false)
@@ -42,6 +48,7 @@ const isDraftLoaded = ref(false)
 
 onMounted(() => {
   loadSettings()
+  loadFriends()
   
   // Load draft if exists
   const draftStr = localStorage.getItem('ceka_bill_draft')
@@ -60,32 +67,6 @@ onMounted(() => {
   } else {
     bill.value.date = new Date().toISOString().substring(0, 10)
     selectedFriendIds.value = ['you']
-  }
-  
-  // Load friends
-  let loadedFriends = []
-  const savedFriends = localStorage.getItem('ceka_friends')
-  if (savedFriends) {
-    loadedFriends = JSON.parse(savedFriends)
-  } else {
-    loadedFriends = [
-      { id: 1, name: 'Budi Pekerti', avatarBg: 'avatar-bg-0' },
-      { id: 2, name: 'Siti Rahma', avatarBg: 'avatar-bg-1' },
-      { id: 3, name: 'Joko Widodo', avatarBg: 'avatar-bg-2' },
-      { id: 4, name: 'Dewi Lestari', avatarBg: 'avatar-bg-3' },
-      { id: 5, name: 'Rian Adriansyah', avatarBg: 'avatar-bg-0' }
-    ]
-  }
-
-  // Ensure "Kamu" is always at the top
-  const hasYou = loadedFriends.some(f => f.id === 'you' || f.name.toLowerCase() === 'you' || f.name.toLowerCase() === 'kamu')
-  if (!hasYou) {
-    allFriends.value = [
-      { id: 'you', name: 'Kamu', avatarBg: 'avatar-bg-1' },
-      ...loadedFriends
-    ]
-  } else {
-    allFriends.value = loadedFriends
   }
 
   // Set isDraftLoaded to true so that watch can start saving
@@ -116,12 +97,7 @@ const handleCancelConfirm = () => {
   useRouter().push('/app')
 }
 
-const getInitials = (name) => {
-  if (!name) return ''
-  return name.trim().split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-}
-
-const toggleSelectFriend = (id) => {
+const toggleSelectFriend = (id: string | number) => {
   const index = selectedFriendIds.value.indexOf(id)
   if (index > -1) {
     selectedFriendIds.value.splice(index, 1)
@@ -137,15 +113,11 @@ const toggleSelectFriend = (id) => {
   }
 }
 
-const isFriendSelected = (id) => {
+const isFriendSelected = (id: string | number): boolean => {
   return selectedFriendIds.value.includes(id)
 }
 
-const getFriendDetails = (id) => {
-  return allFriends.value.find(f => f.id === id)
-}
-
-const filteredFriendsToInvite = computed(() => {
+const filteredFriendsToInvite = computed((): Friend[] => {
   if (!inviteSearchQuery.value.trim()) return allFriends.value
   const query = inviteSearchQuery.value.toLowerCase().trim()
   return allFriends.value.filter(f => f.name.toLowerCase().includes(query))
@@ -155,7 +127,7 @@ const addItem = () => {
   bill.value.items.push({ name: '', price: '', quantity: 1, totalPrice: '', assignments: {} })
 }
 
-const removeItem = (index) => {
+const removeItem = (index: number) => {
   if (bill.value.items.length > 1) {
     bill.value.items.splice(index, 1)
   } else {
@@ -163,40 +135,40 @@ const removeItem = (index) => {
   }
 }
 
-const getIconBg = (catValue) => {
-  const cat = categories.find(c => c.value === catValue)
+const getIconBg = (catValue: string): string => {
+  const cat = categories.value.find(c => c.value === catValue)
   return cat ? cat.bgClass : 'icon-bg-0'
 }
 
-const sanitizeNumber = (val) => {
+const sanitizeNumber = (val: string | number | undefined | null): string => {
   if (val === undefined || val === null) return ''
   return val.toString().replace(/[^\d]/g, '')
 }
 
 // Two-way pricing sync handlers
-const handlePriceChange = (item) => {
-  item.price = sanitizeNumber(item.price)
-  const price = parseFloat(item.price) || 0
-  const qty = parseInt(item.quantity) || 1
+const handlePriceChange = (item: BillItem) => {
+  item.price = sanitizeNumber(item.price as string)
+  const price = parseFloat(item.price as string) || 0
+  const qty = parseInt(item.quantity as string) || 1
   item.totalPrice = Math.round(price * qty).toString()
 }
 
-const handleTotalChange = (item) => {
-  item.totalPrice = sanitizeNumber(item.totalPrice)
-  const total = parseFloat(item.totalPrice) || 0
-  const qty = parseInt(item.quantity) || 1
+const handleTotalChange = (item: BillItem) => {
+  item.totalPrice = sanitizeNumber(item.totalPrice as string)
+  const total = parseFloat(item.totalPrice as string) || 0
+  const qty = parseInt(item.quantity as string) || 1
   item.price = Math.round(total / qty).toString()
 }
 
-const handleQuantityChange = (item) => {
-  item.quantity = sanitizeNumber(item.quantity)
-  const price = parseFloat(item.price) || 0
-  const qty = parseInt(item.quantity) || 1
+const handleQuantityChange = (item: BillItem) => {
+  item.quantity = sanitizeNumber(item.quantity as string)
+  const price = parseFloat(item.price as string) || 0
+  const qty = parseInt(item.quantity as string) || 1
   item.totalPrice = Math.round(price * qty).toString()
 }
 
 // Portions Assignment helpers
-const setItemPortion = (item, friendId, val) => {
+const setItemPortion = (item: BillItem, friendId: string | number, val: string) => {
   if (!item.assignments) item.assignments = {}
   let cleanVal = val.toString().replace(/[^\d.]/g, '')
   const dotCount = (cleanVal.match(/\./g) || []).length
@@ -206,23 +178,23 @@ const setItemPortion = (item, friendId, val) => {
   item.assignments[friendId] = parseFloat(cleanVal) || 0
 }
 
-const incrementPortion = (item, friendId) => {
+const incrementPortion = (item: BillItem, friendId: string | number) => {
   if (!item.assignments) item.assignments = {}
-  const current = parseFloat(item.assignments[friendId]) || 0
+  const current = parseFloat(item.assignments[friendId] as unknown as string) || 0
   item.assignments[friendId] = Number((current + 1).toFixed(1))
 }
 
-const decrementPortion = (item, friendId) => {
+const decrementPortion = (item: BillItem, friendId: string | number) => {
   if (!item.assignments) item.assignments = {}
-  const current = parseFloat(item.assignments[friendId]) || 0
+  const current = parseFloat(item.assignments[friendId] as unknown as string) || 0
   if (current > 0) {
     item.assignments[friendId] = Number((current - 1).toFixed(1))
   }
 }
 
-const toggleFriendAssignment = (item, friendId) => {
+const toggleFriendAssignment = (item: BillItem, friendId: string | number) => {
   if (!item.assignments) item.assignments = {}
-  const current = parseFloat(item.assignments[friendId]) || 0
+  const current = parseFloat(item.assignments[friendId] as unknown as string) || 0
   if (current > 0) {
     item.assignments[friendId] = 0
   } else {
@@ -230,14 +202,14 @@ const toggleFriendAssignment = (item, friendId) => {
   }
 }
 
-const autoSplitItem = (item) => {
+const autoSplitItem = (item: BillItem) => {
   if (!item.assignments) item.assignments = {}
   const checkedIds = selectedFriendIds.value.filter(id => (item.assignments[id] || 0) > 0)
   const activeIds = checkedIds.length > 0 ? checkedIds : selectedFriendIds.value
   
   if (activeIds.length === 0) return
   
-  const qty = parseFloat(item.quantity) || 1
+  const qty = parseFloat(item.quantity as string) || 1
   const portion = Number((qty / activeIds.length).toFixed(1))
   
   selectedFriendIds.value.forEach(id => {
@@ -249,12 +221,12 @@ const autoSplitItem = (item) => {
   })
 }
 
-const getAssignedPortionSum = (item) => {
+const getAssignedPortionSum = (item: BillItem): number => {
   if (!item || !item.assignments) return 0
-  return Object.values(item.assignments).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)
+  return Object.values(item.assignments).reduce((sum, val) => sum + (parseFloat(val as unknown as string) || 0), 0)
 }
 
-const openAssignModal = (index) => {
+const openAssignModal = (index: number) => {
   activeAssignItemIndex.value = index
   showAssignModal.value = true
 }
@@ -272,61 +244,61 @@ const addOtherFee = () => {
   bill.value.otherFees.push({ name: '', amount: '' })
 }
 
-const removeOtherFee = (index) => {
+const removeOtherFee = (index: number) => {
   bill.value.otherFees.splice(index, 1)
 }
 
-const handleFeeAmountChange = (fee) => {
-  fee.amount = sanitizeNumber(fee.amount)
+const handleFeeAmountChange = (fee: OtherFee) => {
+  fee.amount = sanitizeNumber(fee.amount as string)
 }
 
 // Pricing computations
-const subtotalItems = computed(() => {
+const subtotalItems = computed((): number => {
   return bill.value.items.reduce((sum, item) => {
-    const total = parseInt(item.totalPrice) || (parseInt(item.price) * parseInt(item.quantity)) || 0
+    const total = parseInt(item.totalPrice as string) || (parseInt(item.price as string) * parseInt(item.quantity as string)) || 0
     return sum + total
   }, 0)
 })
 
-const subtotalOtherFees = computed(() => {
+const subtotalOtherFees = computed((): number => {
   if (!bill.value.otherFees) return 0
   return bill.value.otherFees.reduce((sum, fee) => {
-    const amt = parseFloat(sanitizeNumber(fee.amount)) || 0
+    const amt = parseFloat(sanitizeNumber(fee.amount as string)) || 0
     return sum + amt
   }, 0)
 })
 
-const calculatedDiscountAmount = computed(() => {
+const calculatedDiscountAmount = computed((): number => {
   const base = subtotalItems.value + subtotalOtherFees.value
   if (bill.value.discountType === 'percent') {
-    const pct = parseFloat(bill.value.discountPercent) || 0
+    const pct = parseFloat(bill.value.discountPercent as string) || 0
     return Math.round(base * (pct / 100))
   } else {
-    return parseFloat(sanitizeNumber(bill.value.discountManual)) || 0
+    return parseFloat(sanitizeNumber(bill.value.discountManual as string)) || 0
   }
 })
 
-const calculatedTaxAmount = computed(() => {
+const calculatedTaxAmount = computed((): number => {
   // Tax calculated after discount is subtracted
   const base = Math.max(0, subtotalItems.value + subtotalOtherFees.value - calculatedDiscountAmount.value)
   if (bill.value.taxType === 'percent') {
-    const pct = parseFloat(bill.value.taxPercent) || 0
+    const pct = parseFloat(bill.value.taxPercent as string) || 0
     return Math.round(base * (pct / 100))
   } else {
-    return parseFloat(sanitizeNumber(bill.value.taxManual)) || 0
+    return parseFloat(sanitizeNumber(bill.value.taxManual as string)) || 0
   }
 })
 
-const totalAmount = computed(() => {
+const totalAmount = computed((): number => {
   const base = subtotalItems.value + subtotalOtherFees.value
   return Math.max(0, base - calculatedDiscountAmount.value + calculatedTaxAmount.value)
 })
 
-const formatCurrency = (val) => {
+const formatCurrency = (val: number): string => {
   return new Intl.NumberFormat('id-ID').format(val)
 }
 
-const saveBill = () => {
+const goToPreviewSplit = () => {
   if (!bill.value.title.trim()) {
     alert(t('fillBillNameAlert'))
     return
@@ -337,73 +309,47 @@ const saveBill = () => {
   }
 
   // Validate items
-  const validItems = bill.value.items.filter(item => item.name.trim() && (parseInt(item.price) > 0 || parseInt(item.totalPrice) > 0))
+  const validItems = bill.value.items.filter(item => item.name.trim() && (parseInt(item.price as string) > 0 || parseInt(item.totalPrice as string) > 0))
   if (validItems.length === 0) {
     alert(t('minOneItemAlert'))
     return
   }
 
-  const savedHistory = localStorage.getItem('ceka_history')
-  const history = savedHistory ? JSON.parse(savedHistory) : []
-  
-  const newBill = {
-    id: Date.now(),
+  const pendingBill = {
     title: bill.value.title.trim(),
     date: bill.value.date,
-    peopleCount: selectedFriendIds.value.length || 1,
-    amount: totalAmount.value,
-    iconType: bill.value.category,
-    iconBg: getIconBg(bill.value.category),
+    category: bill.value.category,
     items: validItems.map(item => ({
       name: item.name.trim(),
-      price: parseInt(item.price) || 0,
-      quantity: parseInt(item.quantity) || 1,
-      totalPrice: parseInt(item.totalPrice) || (parseInt(item.price) * parseInt(item.quantity)),
+      price: parseInt(item.price as string) || 0,
+      quantity: parseInt(item.quantity as string) || 1,
+      totalPrice: parseInt(item.totalPrice as string) || (parseInt(item.price as string) * parseInt(item.quantity as string)),
       assignments: item.assignments || {}
     })),
-    invitedFriends: selectedFriendIds.value.map(id => {
-      const f = getFriendDetails(id)
-      return f ? { id: f.id, name: f.name, avatarBg: f.avatarBg } : null
-    }).filter(Boolean),
+    selectedFriendIds: selectedFriendIds.value,
     taxType: bill.value.taxType,
-    taxPercent: parseFloat(bill.value.taxPercent) || 0,
-    taxManual: parseFloat(sanitizeNumber(bill.value.taxManual)) || 0,
-    taxAmount: calculatedTaxAmount.value,
+    taxPercent: parseFloat(bill.value.taxPercent as string) || 0,
+    taxManual: parseFloat(sanitizeNumber(bill.value.taxManual as string)) || 0,
     discountType: bill.value.discountType,
-    discountPercent: parseFloat(bill.value.discountPercent) || 0,
-    discountManual: parseFloat(sanitizeNumber(bill.value.discountManual)) || 0,
-    discountAmount: calculatedDiscountAmount.value,
+    discountPercent: parseFloat(bill.value.discountPercent as string) || 0,
+    discountManual: parseFloat(sanitizeNumber(bill.value.discountManual as string)) || 0,
     otherFees: (bill.value.otherFees || []).map(fee => ({
       name: fee.name.trim() || 'Biaya Tambahan',
-      amount: parseFloat(sanitizeNumber(fee.amount)) || 0
-    })),
-    subtotalItems: subtotalItems.value,
-    subtotalOtherFees: subtotalOtherFees.value
+      amount: parseFloat(sanitizeNumber(fee.amount as string)) || 0
+    }))
   }
   
-  history.unshift(newBill)
-  localStorage.setItem('ceka_history', JSON.stringify(history))
-  
-  // Clear draft
-  localStorage.removeItem('ceka_bill_draft')
-  
-  // Redirect back to dashboard
-  useRouter().push('/app')
+  localStorage.setItem('ceka_pending_bill', JSON.stringify(pendingBill))
+  useRouter().push('/app/preview')
 }
 </script>
 
 <template>
   <div class="neubrutal-container">
-    <header class="app-header">
-      <button type="button" @click="confirmCancel" class="back-btn neubrutal-box" style="cursor: pointer;">
-        <ArrowLeft :size="20" strokeWidth="2.5" />
-      </button>
-      <h1 class="page-title">{{ t('splitBillTitle') }}</h1>
-      <div style="width: 42px;"></div> <!-- Spacer to center the title -->
-    </header>
+    <AppHeader :title="t('splitBillTitle')" @back="confirmCancel" :show-back-button="true" />
 
     <main class="app-main">
-      <form @submit.prevent="saveBill" class="bill-form">
+      <form @submit.prevent="goToPreviewSplit" class="bill-form">
         
         <!-- Bill Details Card -->
         <section class="form-section-card neubrutal-box">
@@ -446,9 +392,9 @@ const saveBill = () => {
           <div class="items-header">
             <h2 class="section-title-nested"><Users :size="18" /> {{ t('membersTitle') }}</h2>
             <!-- Icon-Only Pilih Teman Button -->
-            <button type="button" class="neubrutal-btn primary invite-btn-icon-only" @click="showInviteModal = true" :title="t('selectFriends')">
-              <UserPlus :size="15" strokeWidth="3" />
-            </button>
+            <NeubrutalButton variant="primary" custom-class="invite-btn-icon-only" @click="showInviteModal = true" :title="t('selectFriends')">
+              <UserPlus :size="15" :stroke-width="3" />
+            </NeubrutalButton>
           </div>
 
           <!-- Selected Friends Chips List -->
@@ -464,11 +410,11 @@ const saveBill = () => {
                 class="friend-chip neubrutal-box"
               >
                 <div class="chip-avatar" :class="getFriendDetails(id)?.avatarBg">
-                  <span>{{ getInitials(getFriendDetails(id)?.name) }}</span>
+                  <span>{{ getInitials(getFriendDetails(id)?.name || '') }}</span>
                 </div>
                 <span class="chip-name">{{ getFriendDetails(id)?.name.split(' ')[0] }}</span>
                 <button type="button" class="remove-chip-btn" @click="toggleSelectFriend(id)">
-                  <X :size="14" strokeWidth="3" />
+                  <X :size="14" :stroke-width="3" />
                 </button>
               </div>
             </div>
@@ -496,7 +442,7 @@ const saveBill = () => {
                   @click="removeItem(index)"
                   :title="t('removeItem')"
                 >
-                  <Trash2 :size="15" strokeWidth="2.5" />
+                  <Trash2 :size="15" :stroke-width="2.5" />
                 </button>
               </div>
 
@@ -559,8 +505,8 @@ const saveBill = () => {
                     v-if="selectedFriendIds.length > 0"
                     class="status-badge-inline" 
                     :class="{ 
-                      success: Number(getAssignedPortionSum(item).toFixed(1)) === (parseFloat(item.quantity) || 1),
-                      warning: Number(getAssignedPortionSum(item).toFixed(1)) !== (parseFloat(item.quantity) || 1)
+                      success: Number(getAssignedPortionSum(item).toFixed(1)) === (parseFloat(item.quantity as string) || 1),
+                      warning: Number(getAssignedPortionSum(item).toFixed(1)) !== (parseFloat(item.quantity as string) || 1)
                     }"
                   >
                     {{ t('allocated') }}: {{ getAssignedPortionSum(item) }} / {{ item.quantity || 1 }} {{ t('portions') }}
@@ -576,12 +522,12 @@ const saveBill = () => {
                     class="assigned-friend-chip neubrutal-box"
                   >
                     <div class="chip-avatar-mini" :class="getFriendDetails(id)?.avatarBg">
-                      <span>{{ getInitials(getFriendDetails(id)?.name) }}</span>
+                      <span>{{ getInitials(getFriendDetails(id)?.name || '') }}</span>
                     </div>
                     <span class="chip-name-mini">{{ getFriendDetails(id)?.name.split(' ')[0] }}</span>
                     <span class="chip-portion-badge">{{ item.assignments && item.assignments[id] }}x</span>
                     <button type="button" class="remove-chip-btn-mini" @click="item.assignments[id] = 0">
-                      <X :size="12" strokeWidth="3" />
+                      <X :size="12" :stroke-width="3" />
                     </button>
                   </div>
 
@@ -592,7 +538,7 @@ const saveBill = () => {
                     @click="openAssignModal(index)"
                     :title="t('selectFriends')"
                   >
-                    <Plus :size="14" strokeWidth="3" />
+                    <Plus :size="14" :stroke-width="3" />
                   </button>
                 </div>
               </div>
@@ -601,9 +547,9 @@ const saveBill = () => {
           </div>
 
           <!-- Tambah Item Button below the item rows -->
-          <button type="button" class="neubrutal-btn primary add-item-btn-bottom" @click="addItem">
-            <Plus :size="16" strokeWidth="3" />{{ t('addNewMenu') }}
-          </button>
+          <NeubrutalButton variant="primary" custom-class="add-item-btn-bottom" @click="addItem">
+            <Plus :size="16" :stroke-width="3" />{{ t('addNewMenu') }}
+          </NeubrutalButton>
         </section>
 
         <!-- Tax, Discount and Other Fees Section -->
@@ -744,9 +690,9 @@ const saveBill = () => {
             <div class="other-fees-header">
               <span class="fees-subtitle"><Coins :size="15" /> {{ t('otherFeesLabel') }}</span>
               <!-- Icon-Only Tambah Biaya Button -->
-              <button type="button" class="neubrutal-btn primary add-fee-btn-icon-only" @click="addOtherFee" :title="t('otherFeesLabel')">
-                <Plus :size="15" strokeWidth="3" />
-              </button>
+              <NeubrutalButton variant="primary" custom-class="add-fee-btn-icon-only" @click="addOtherFee" :title="t('otherFeesLabel')">
+                <Plus :size="15" :stroke-width="3" />
+              </NeubrutalButton>
             </div>
 
             <div v-if="!bill.otherFees || bill.otherFees.length === 0" class="empty-fees-notice">
@@ -792,7 +738,7 @@ const saveBill = () => {
                   @click="removeOtherFee(fIndex)"
                   :title="t('removeItem')"
                 >
-                  <Trash2 :size="14" strokeWidth="2.5" />
+                  <Trash2 :size="14" :stroke-width="2.5" />
                 </button>
               </div>
             </div>
@@ -807,12 +753,12 @@ const saveBill = () => {
           </div>
 
           <div class="action-footer-buttons">
-            <button type="button" @click="confirmCancel" class="neubrutal-btn ghost flex-1 cancel-btn">
+            <NeubrutalButton variant="ghost" custom-class="flex-1 cancel-btn" @click="confirmCancel">
                {{ t('cancel') }}
-            </button>
-            <button type="submit" class="neubrutal-btn primary flex-1 save-btn">
-              <Save :size="18" strokeWidth="3" /> {{ t('saveBillBtn') }}
-            </button>
+            </NeubrutalButton>
+            <NeubrutalButton type="submit" variant="primary" custom-class="flex-1 save-btn">
+              <Users :size="18" :stroke-width="3" /> {{ t('previewSplitBtn') }}
+            </NeubrutalButton>
           </div>
         </section>
 
@@ -820,195 +766,174 @@ const saveBill = () => {
     </main>
 
     <!-- Invite Friends Checklist Modal (Main Tagihan) -->
-    <div class="modal-overlay" v-if="showInviteModal" @click.self="showInviteModal = false">
-      <div class="neubrutal-box modal-content invite-modal-content">
-        <div class="modal-accent-bar default-accent"></div>
+    <NeubrutalModal :show="showInviteModal" accent="primary" @close="showInviteModal = false">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <h2 class="modal-title"><Users class="title-icon" /> {{ t('selectFriends') }}</h2>
+          <span class="modal-subtitle">{{ t('participatingSubtitle') }}</span>
+        </div>
+        <button class="close-modal-btn" @click="showInviteModal = false">
+          <X :size="20" :stroke-width="3" />
+        </button>
+      </div>
 
-        <div class="modal-header">
-          <div class="modal-title-wrapper">
-            <h2 class="modal-title"><Users class="title-icon" /> {{ t('selectFriends') }}</h2>
-            <span class="modal-subtitle">{{ t('participatingSubtitle') }}</span>
-          </div>
-          <button class="close-modal-btn" @click="showInviteModal = false">
-            <X :size="20" strokeWidth="3" />
-          </button>
+      <div class="modal-body">
+        <!-- Search Friend to Invite -->
+        <div class="search-wrapper-new">
+          <Search :size="18" :stroke-width="3" class="search-icon-new" />
+          <input 
+            type="text" 
+            v-model="inviteSearchQuery" 
+            :placeholder="t('searchFriendPlaceholder')" 
+            class="neubrutal-input search-input-new"
+          />
         </div>
 
-        <div class="modal-body">
-          <!-- Search Friend to Invite -->
-          <div class="search-wrapper-new">
-            <Search :size="18" strokeWidth="3" class="search-icon-new" />
-            <input 
-              type="text" 
-              v-model="inviteSearchQuery" 
-              :placeholder="t('searchFriendPlaceholder')" 
-              class="neubrutal-input search-input-new"
-            />
-          </div>
-
-          <!-- Friends Checklist List -->
-          <div class="friends-invite-list-new">
-            <div 
-              v-for="friend in filteredFriendsToInvite" 
-              :key="friend.id"
-              class="invite-friend-row-new"
-              :class="{ selected: isFriendSelected(friend.id) }"
-              @click="toggleSelectFriend(friend.id)"
-            >
-              <div class="custom-checkbox-neubrutal">
-                <div class="checkbox-box" :class="{ checked: isFriendSelected(friend.id) }">
-                  <CheckSquare v-if="isFriendSelected(friend.id)" :size="14" class="check-icon-svg" />
-                </div>
-              </div>
-
-              <div class="invite-avatar-new" :class="friend.avatarBg">
-                <span>{{ getInitials(friend.name) }}</span>
-              </div>
-              
-              <div class="friend-name-details">
-                <span class="invite-name-new">{{ friend.name }}</span>
+        <!-- Friends Checklist List -->
+        <div class="friends-invite-list-new">
+          <div 
+            v-for="friend in filteredFriendsToInvite" 
+            :key="friend.id"
+            class="invite-friend-row-new"
+            :class="{ selected: isFriendSelected(friend.id) }"
+            @click="toggleSelectFriend(friend.id)"
+          >
+            <div class="custom-checkbox-neubrutal">
+              <div class="checkbox-box" :class="{ checked: isFriendSelected(friend.id) }">
+                <CheckSquare v-if="isFriendSelected(friend.id)" :size="14" class="check-icon-svg" />
               </div>
             </div>
-          </div>
 
-          <button type="button" class="neubrutal-btn primary modal-submit-btn-new" @click="showInviteModal = false">
-            {{ t('doneBtn') }} ({{ selectedFriendIds.length }} {{ t('friendLabel') }})
-          </button>
+            <FriendAvatar :name="friend.name" :avatar-bg="friend.avatarBg" size="sm" />
+            
+            <div class="friend-name-details">
+              <span class="invite-name-new">{{ friend.name }}</span>
+            </div>
+          </div>
         </div>
+
+        <NeubrutalButton variant="primary" custom-class="modal-submit-btn-new" @click="showInviteModal = false">
+          {{ t('doneBtn') }} ({{ selectedFriendIds.length }} {{ t('friendLabel') }})
+        </NeubrutalButton>
       </div>
-    </div>
+    </NeubrutalModal>
 
     <!-- Assign Friends to Specific Item Modal (Modal-driven portions) -->
-    <div class="modal-overlay" v-if="showAssignModal" @click.self="closeAssignModal">
-      <div class="neubrutal-box modal-content assign-modal-content" v-if="activeAssignItemIndex !== null">
-        <!-- Accent decorative bar -->
-        <div class="modal-accent-bar pizza-accent" v-if="bill.category === 'pizza'"></div>
-        <div class="modal-accent-bar coffee-accent" v-else-if="bill.category === 'coffee'"></div>
-        <div class="modal-accent-bar default-accent" v-else></div>
-
-        <div class="modal-header">
+    <NeubrutalModal :show="showAssignModal" accent="warning" @close="closeAssignModal">
+      <div class="modal-body" v-if="activeAssignItem">
+        <div class="modal-header-assign">
           <div class="modal-title-wrapper">
             <h2 class="modal-title"><ShoppingBag class="title-icon" /> {{ t('allocateItemTitle') }}</h2>
             <span class="modal-subtitle">
-              {{ t('menuText') }}: {{ bill.items[activeAssignItemIndex]?.name || (language === 'en' ? 'Unnamed' : 'Tanpa Nama') }}
+              {{ t('menuText') }}: {{ activeAssignItem.name || (language === 'en' ? 'Unnamed' : 'Tanpa Nama') }}
             </span>
           </div>
           <button type="button" class="close-modal-btn" @click="closeAssignModal">
-            <X :size="20" strokeWidth="3" />
+            <X :size="20" :stroke-width="3" />
           </button>
         </div>
 
-        <div class="modal-body">
-          <div class="modal-info-summary">
-            <div class="summary-info-pill qty-pill">
-              <span class="label">{{ t('qty') }}:</span>
-              <span class="val">{{ bill.items[activeAssignItemIndex]?.quantity || 1 }} {{ t('portions') }}</span>
-            </div>
-            <div class="summary-info-pill price-pill">
-              <span class="label">{{ t('total') }}:</span>
-              <span class="val">{{ currency }} {{ formatCurrency(bill.items[activeAssignItemIndex]?.totalPrice || 0) }}</span>
-            </div>
+        <div class="modal-info-summary">
+          <div class="summary-info-pill qty-pill">
+            <span class="label">{{ t('qty') }}:</span>
+            <span class="val">{{ activeAssignItem.quantity || 1 }} {{ t('portions') }}</span>
           </div>
-
-          <div class="modal-actions-top">
-            <button 
-              type="button" 
-              class="auto-split-btn" 
-              @click="autoSplitItem(bill.items[activeAssignItemIndex])"
-            >
-              <Users :size="14" /> {{ t('autoSplit') }}
-            </button>
+          <div class="summary-info-pill price-pill">
+            <span class="label">{{ t('total') }}:</span>
+            <span class="val">{{ currency }} {{ formatCurrency(Number(activeAssignItem.totalPrice) || 0) }}</span>
           </div>
+        </div>
 
-          <div class="empty-assignment-notice" v-if="selectedFriendIds.length === 0">
-            <p>{{ t('emptyAssignFriends') }}</p>
-          </div>
+        <div class="modal-actions-top">
+          <button 
+            type="button" 
+            class="auto-split-btn" 
+            @click="autoSplitItem(activeAssignItem!)"
+          >
+            <Users :size="14" /> {{ t('autoSplit') }}
+          </button>
+        </div>
 
-          <div class="assignment-friends-list modal-friends-list" v-else>
-            <div 
-              v-for="id in selectedFriendIds" 
-              :key="id" 
-              class="assignment-friend-row-new"
-              :class="{ active: (bill.items[activeAssignItemIndex]?.assignments && bill.items[activeAssignItemIndex]?.assignments[id] || 0) > 0 }"
-            >
-              <div class="friend-row-main" @click="toggleFriendAssignment(bill.items[activeAssignItemIndex], id)">
-                <div class="custom-checkbox-neubrutal">
-                  <div class="checkbox-box" :class="{ checked: (bill.items[activeAssignItemIndex]?.assignments && bill.items[activeAssignItemIndex]?.assignments[id] || 0) > 0 }">
-                    <CheckSquare v-if="(bill.items[activeAssignItemIndex]?.assignments && bill.items[activeAssignItemIndex]?.assignments[id] || 0) > 0" :size="14" class="check-icon-svg" />
-                  </div>
-                </div>
-                
-                <div class="assignment-avatar-new" :class="getFriendDetails(id)?.avatarBg">
-                  <span>{{ getInitials(getFriendDetails(id)?.name) }}</span>
-                </div>
-                
-                <div class="friend-name-details">
-                  <span class="assignment-name-new">{{ getFriendDetails(id)?.name }}</span>
+        <div class="empty-assignment-notice" v-if="selectedFriendIds.length === 0">
+          <p>{{ t('emptyAssignFriends') }}</p>
+        </div>
+
+        <div class="assignment-friends-list modal-friends-list" v-else>
+          <div 
+            v-for="id in selectedFriendIds" 
+            :key="id" 
+            class="assignment-friend-row-new"
+            :class="{ active: (activeAssignItem.assignments && activeAssignItem.assignments[id] || 0) > 0 }"
+          >
+            <div class="friend-row-main" @click="toggleFriendAssignment(activeAssignItem!, id)">
+              <div class="custom-checkbox-neubrutal">
+                <div class="checkbox-box" :class="{ checked: (activeAssignItem.assignments && activeAssignItem.assignments[id] || 0) > 0 }">
+                  <CheckSquare v-if="(activeAssignItem.assignments && activeAssignItem.assignments[id] || 0) > 0" :size="14" class="check-icon-svg" />
                 </div>
               </div>
+              
+              <FriendAvatar :name="getFriendDetails(id)?.name || ''" :avatar-bg="getFriendDetails(id)?.avatarBg" size="sm" />
+              
+              <div class="friend-name-details">
+                <span class="assignment-name-new">{{ getFriendDetails(id)?.name }}</span>
+              </div>
+            </div>
 
-              <!-- Quantity portion counter capsule inside modal -->
-              <div class="portion-counter-capsule" v-if="(bill.items[activeAssignItemIndex]?.assignments && bill.items[activeAssignItemIndex]?.assignments[id] || 0) > 0">
-                <button type="button" class="capsule-btn minus" @click="decrementPortion(bill.items[activeAssignItemIndex], id)">-</button>
+            <!-- Quantity portion counter capsule inside modal -->
+                <button type="button" class="capsule-btn minus" @click="decrementPortion(activeAssignItem!, id)">-</button>
                 <input 
                   type="text" 
                   class="capsule-input" 
-                  :value="bill.items[activeAssignItemIndex]?.assignments && bill.items[activeAssignItemIndex]?.assignments[id] !== undefined ? bill.items[activeAssignItemIndex]?.assignments[id] : 0" 
-                  @input="e => setItemPortion(bill.items[activeAssignItemIndex], id, e.target.value)"
+                  :value="activeAssignItem.assignments && activeAssignItem.assignments[id] !== undefined ? activeAssignItem.assignments[id] : 0" 
+                  @input="e => setItemPortion(activeAssignItem!, id, (e.target as HTMLInputElement).value)"
                 />
-                <button type="button" class="capsule-btn plus" @click="incrementPortion(bill.items[activeAssignItemIndex], id)">+</button>
-              </div>
+                <button type="button" class="capsule-btn plus" @click="incrementPortion(activeAssignItem!, id)">+</button>
             </div>
           </div>
 
-          <div class="modal-footer-status-bar">
-            <div 
-              class="status-banner" 
-              :class="{ 
-                success: Number(getAssignedPortionSum(bill.items[activeAssignItemIndex]).toFixed(1)) === (parseFloat(bill.items[activeAssignItemIndex]?.quantity) || 1),
-                warning: Number(getAssignedPortionSum(bill.items[activeAssignItemIndex]).toFixed(1)) !== (parseFloat(bill.items[activeAssignItemIndex]?.quantity) || 1)
-              }"
-            >
-              <span class="status-icon-dot"></span>
-              <span class="status-text">
-                {{ t('allocated') }}: <strong>{{ getAssignedPortionSum(bill.items[activeAssignItemIndex]) }}</strong> {{ t('of') }} <strong>{{ bill.items[activeAssignItemIndex]?.quantity || 1 }}</strong> {{ t('portions') }}
-              </span>
-            </div>
+        <div class="modal-footer-status-bar">
+          <div 
+            class="status-banner" 
+            :class="{ 
+              success: Number(getAssignedPortionSum(activeAssignItem).toFixed(1)) === (parseFloat(activeAssignItem.quantity as string) || 1),
+              warning: Number(getAssignedPortionSum(activeAssignItem).toFixed(1)) !== (parseFloat(activeAssignItem.quantity as string) || 1)
+            }"
+          >
+            <span class="status-icon-dot"></span>
+            <span class="status-text">
+              {{ t('allocated') }}: <strong>{{ getAssignedPortionSum(activeAssignItem) }}</strong> {{ t('of') }} <strong>{{ activeAssignItem.quantity || 1 }}</strong> {{ t('portions') }}
+            </span>
           </div>
-
-          <button type="button" class="neubrutal-btn primary modal-submit-btn-new" @click="closeAssignModal">
-            {{ t('doneBtn') }}
-          </button>
         </div>
+
+        <NeubrutalButton variant="primary" custom-class="modal-submit-btn-new" @click="closeAssignModal">
+          {{ t('doneBtn') }}
+        </NeubrutalButton>
       </div>
-    </div>
+    </NeubrutalModal>
 
     <!-- Beautiful Neubrutalist Cancel Confirmation Modal -->
-    <div class="modal-overlay" v-if="showCancelConfirmModal" @click.self="showCancelConfirmModal = false">
-      <div class="neubrutal-box modal-content confirm-modal-content">
-        <div class="modal-accent-bar danger-accent" style="background: #EF4444;"></div>
+    <NeubrutalModal :show="showCancelConfirmModal" accent="danger" @close="showCancelConfirmModal = false">
+      <div class="confirm-modal-body">
+        <div class="confirm-icon-wrapper neubrutal-box">
+          <Trash2 :size="32" :stroke-width="2.5" />
+        </div>
         
-        <div class="confirm-modal-body">
-          <div class="confirm-icon-wrapper neubrutal-box">
-            <Trash2 :size="32" strokeWidth="2.5" />
-          </div>
-          
-          <h2 class="confirm-title">{{ t('cancelBillConfirmTitle') }}</h2>
-          <p class="confirm-text">
-            {{ t('cancelBillConfirmText') }}
-          </p>
-          
-          <div class="confirm-actions-row">
-            <button type="button" class="neubrutal-btn ghost flex-1 confirm-btn-cancel" @click="showCancelConfirmModal = false">
-              {{ t('goBack') }}
-            </button>
-            <button type="button" class="neubrutal-btn primary danger flex-1 confirm-btn-yes" @click="handleCancelConfirm">
-              {{ t('yesCancel') }}
-            </button>
-          </div>
+        <h2 class="confirm-title">{{ t('cancelBillConfirmTitle') }}</h2>
+        <p class="confirm-text">
+          {{ t('cancelBillConfirmText') }}
+        </p>
+        
+        <div class="confirm-actions-row">
+          <NeubrutalButton variant="ghost" custom-class="flex-1 confirm-btn-cancel" @click="showCancelConfirmModal = false">
+            {{ t('goBack') }}
+          </NeubrutalButton>
+          <NeubrutalButton variant="danger" custom-class="flex-1 confirm-btn-yes save-btn-final" @click="handleCancelConfirm">
+            {{ t('yesCancel') }}
+          </NeubrutalButton>
         </div>
       </div>
-    </div>
+    </NeubrutalModal>
   </div>
 </template>
 
@@ -2261,5 +2186,50 @@ const saveBill = () => {
 .neubrutal-btn.primary.danger:active {
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0px #111 !important;
+}
+
+/* Page Specific Mobile Responsive Overrides */
+@media (max-width: 480px) {
+  .form-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-main {
+    padding: 0 12px 100px !important;
+  }
+  
+  .form-section-card {
+    padding: 14px !important;
+  }
+  
+  .item-row-card {
+    padding: 12px !important;
+  }
+  
+  .portions-assignment-summary {
+    padding: 10px !important;
+  }
+
+  .portion-counter-capsule {
+    padding: 2px 4px !important;
+  }
+
+  .capsule-btn {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .capsule-input {
+    width: 22px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .cancel-btn, .save-btn {
+    padding: 10px 8px !important;
+    font-size: 0.85rem !important;
+  }
 }
 </style>

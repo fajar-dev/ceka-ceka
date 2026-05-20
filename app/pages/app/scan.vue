@@ -1,18 +1,20 @@
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { ArrowLeft, Camera, Image, RotateCw, X, Check, Sparkles } from '@lucide/vue'
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
+import { Camera, Image, RotateCw, X, Check, Sparkles } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
 
-const { t, loadSettings } = useCekaSettings()
+const { t, loadSettings, language } = useCekaSettings()
+const router = useRouter()
 
-const videoRef = ref(null)
-const canvasRef = ref(null)
-const stream = ref(null)
-const cameraError = ref(null)
-const facingMode = ref('environment') // 'environment' (back camera) or 'user' (front camera)
+const videoRef = ref<HTMLVideoElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const stream = ref<MediaStream | null>(null)
+const cameraError = ref<string | null>(null)
+const facingMode = ref<'environment' | 'user'>('environment')
 const isCaptured = ref(false)
-const capturedImage = ref(null)
-const fileInputRef = ref(null)
+const capturedImage = ref<string | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const isScanning = ref(false)
 
 onMounted(() => {
@@ -22,6 +24,15 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopCamera()
+})
+
+onBeforeUnmount(() => {
+  stopCamera()
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  stopCamera()
+  next()
 })
 
 const startCamera = async () => {
@@ -51,8 +62,17 @@ const startCamera = async () => {
 
 const stopCamera = () => {
   if (stream.value) {
-    stream.value.getTracks().forEach(track => track.stop())
+    try {
+      stream.value.getTracks().forEach(track => {
+        track.stop()
+      })
+    } catch (err) {
+      console.error('Error stopping camera tracks:', err)
+    }
     stream.value = null
+  }
+  if (videoRef.value) {
+    videoRef.value.srcObject = null
   }
 }
 
@@ -67,6 +87,7 @@ const takePhoto = () => {
   const video = videoRef.value
   const canvas = canvasRef.value
   const ctx = canvas.getContext('2d')
+  if (!ctx) return
   
   // Match canvas dimensions to video feed
   canvas.width = video.videoWidth
@@ -86,13 +107,14 @@ const triggerFileSelect = () => {
   }
 }
 
-const handleFileSelect = (event) => {
-  const file = event.target.files[0]
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
   
   const reader = new FileReader()
   reader.onload = (e) => {
-    capturedImage.value = e.target.result
+    capturedImage.value = e.target?.result as string
     isCaptured.value = true
     stopCamera()
   }
@@ -131,7 +153,7 @@ const processOCR = () => {
     localStorage.setItem('ceka_history', JSON.stringify(history))
     
     // Redirect to app
-    useRouter().push('/app')
+    router.push('/app')
   }, 2500)
 }
 </script>
@@ -158,7 +180,7 @@ const processOCR = () => {
 
       <!-- Preview Captured Image -->
       <div v-show="isCaptured" class="preview-container">
-        <img :src="capturedImage" alt="Captured Receipt" class="captured-preview-img" />
+        <img v-if="capturedImage" :src="capturedImage" alt="Captured Receipt" class="captured-preview-img" />
         
         <!-- Scan Loader Overlay -->
         <div v-if="isScanning" class="ocr-scanning-overlay">
@@ -178,13 +200,7 @@ const processOCR = () => {
     </div>
 
     <!-- Floating Top Header -->
-    <header class="app-header floating-header">
-      <NuxtLink to="/app" class="back-btn neubrutal-box header-btn">
-        <ArrowLeft :size="20" strokeWidth="2.5" />
-      </NuxtLink>
-      <h1 class="page-title dark-title">{{ t('scanTitle') }}</h1>
-      <div style="width: 42px;"></div> <!-- Spacer -->
-    </header>
+    <AppHeader :title="t('scanTitle')" back-route="/app" :show-back-button="true" class="floating-header" />
 
     <!-- Gallery Input File (Hidden) -->
     <input 
@@ -202,29 +218,29 @@ const processOCR = () => {
     <!-- Live Camera Controls -->
     <section v-if="!isCaptured" class="controls-section floating-controls">
       <button class="control-btn circle neubrutal-box" @click="triggerFileSelect" :title="language === 'en' ? 'Select from Gallery' : 'Pilih dari Galeri'">
-        <Image :size="22" strokeWidth="2.5" />
+        <Image :size="22" :stroke-width="2.5" />
       </button>
       
       <button class="capture-btn neubrutal-box" @click="takePhoto" :title="language === 'en' ? 'Take Photo' : 'Ambil Foto'">
         <div class="inner-circle">
-          <Camera :size="28" strokeWidth="2.5" />
+          <Camera :size="28" :stroke-width="2.5" />
         </div>
       </button>
       
       <button class="control-btn circle neubrutal-box" @click="toggleCamera" :title="language === 'en' ? 'Switch Camera' : 'Ubah Kamera'">
-        <RotateCw :size="22" strokeWidth="2.5" />
+        <RotateCw :size="22" :stroke-width="2.5" />
       </button>
     </section>
 
     <!-- Capture Confirmation Controls -->
     <section v-else class="controls-section floating-controls confirmation">
       <button class="neubrutal-btn ghost action-btn-confirm" @click="retakePhoto" :disabled="isScanning">
-        <X :size="18" strokeWidth="2.5" />
+        <X :size="18" :stroke-width="2.5" />
         <span>{{ t('retakeBtn') }}</span>
       </button>
       
       <button class="neubrutal-btn primary action-btn-confirm" @click="processOCR" :disabled="isScanning">
-        <Check :size="18" strokeWidth="3" />
+        <Check :size="18" :stroke-width="3" />
         <span>{{ t('processBtn') }}</span>
       </button>
     </section>
@@ -338,42 +354,24 @@ const processOCR = () => {
 }
 
 /* Floating Top Header */
-.floating-header {
+:deep(.floating-header) {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 10;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
-  padding: 24px 24px 48px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%) !important;
+  border: none !important;
 }
 
-.back-btn {
-  width: 42px;
-  height: 42px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  color: #111;
-  text-decoration: none;
-  background: white;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-hard-sm);
-  border: 3px solid #111;
-}
-
-.back-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0px #111;
-}
-
-.dark-title {
-  color: white;
+:deep(.floating-header .page-title) {
+  color: white !important;
   text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+:deep(.floating-header .back-btn) {
+  background: white !important;
+  color: #111 !important;
 }
 
 /* Hidden inputs */

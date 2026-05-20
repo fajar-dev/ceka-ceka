@@ -1,68 +1,55 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { ArrowLeft, Plus, Trash2, Edit2, X, Search, Phone, Mail } from '@lucide/vue'
+import { Plus, Trash2, Edit2, X, Search, Phone, Mail, UserPlus } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
+import { useCekaFriends } from '~/composables/useCekaFriends'
+import type { Friend } from '~/types'
 
 const { loadSettings, t, language } = useCekaSettings()
+const {
+  listFriendsOnly,
+  loadFriends,
+  addFriend,
+  updateFriend,
+  deleteFriend
+} = useCekaFriends()
 
-const friends = ref([])
 const searchQuery = ref('')
 
-// Modal State
-const showModal = ref(false)
+// Modal States
+const showAddEditModal = ref(false)
 const isEditMode = ref(false)
-const currentFriendId = ref(null)
+const currentFriendId = ref<string | number | null>(null)
 const friendForm = ref({
   name: '',
   phone: '',
   email: ''
 })
 
-const avatarClasses = ['avatar-bg-0', 'avatar-bg-1', 'avatar-bg-2', 'avatar-bg-3']
+const showDeleteConfirmModal = ref(false)
+const friendIdToDelete = ref<string | number | null>(null)
 
 onMounted(() => {
   loadSettings()
-  
-  const saved = localStorage.getItem('ceka_friends')
-  if (saved) {
-    friends.value = JSON.parse(saved)
-  } else {
-    // Initial default friends
-    friends.value = [
-      { id: 1, name: 'Budi Pekerti', phone: '081234567890', email: 'budi@example.com', avatarBg: 'avatar-bg-0' },
-      { id: 2, name: 'Siti Rahma', phone: '081987654321', email: 'siti@example.com', avatarBg: 'avatar-bg-1' },
-      { id: 3, name: 'Joko Widodo', phone: '082122232425', email: 'jokowi@example.com', avatarBg: 'avatar-bg-2' },
-      { id: 4, name: 'Dewi Lestari', phone: '', email: 'dewi@example.com', avatarBg: 'avatar-bg-3' },
-      { id: 5, name: 'Rian Adriansyah', phone: '087855566677', email: '', avatarBg: 'avatar-bg-0' }
-    ]
-    saveToStorage()
-  }
+  loadFriends()
 })
 
-const saveToStorage = () => {
-  localStorage.setItem('ceka_friends', JSON.stringify(friends.value))
-}
-
-const getInitials = (name) => {
-  if (!name) return ''
-  return name.trim().split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-}
-
 // Search Logic
-const filteredFriends = computed(() => {
-  if (!searchQuery.value.trim()) return friends.value
+const filteredFriends = computed((): Friend[] => {
+  const list = listFriendsOnly.value
+  if (!searchQuery.value.trim()) return list
   const query = searchQuery.value.toLowerCase().trim()
-  return friends.value.filter(f => f.name.toLowerCase().includes(query))
+  return list.filter(f => f.name.toLowerCase().includes(query))
 })
 
 // Modal Logic
 const openAddModal = () => {
   isEditMode.value = false
   friendForm.value = { name: '', phone: '', email: '' }
-  showModal.value = true
+  showAddEditModal.value = true
 }
 
-const openEditModal = (friend) => {
+const openEditModal = (friend: Friend) => {
   isEditMode.value = true
   currentFriendId.value = friend.id
   friendForm.value = {
@@ -70,61 +57,56 @@ const openEditModal = (friend) => {
     phone: friend.phone || '',
     email: friend.email || ''
   }
-  showModal.value = true
+  showAddEditModal.value = true
 }
 
-const closeModal = () => {
-  showModal.value = false
+const closeAddEditModal = () => {
+  showAddEditModal.value = false
 }
 
 const handleSubmit = () => {
   if (!friendForm.value.name.trim()) return
   
-  if (isEditMode.value) {
-    const friend = friends.value.find(f => f.id === currentFriendId.value)
-    if (friend) {
-      friend.name = friendForm.value.name.trim()
-      friend.phone = friendForm.value.phone.trim()
-      friend.email = friendForm.value.email.trim()
-      saveToStorage()
-    }
+  if (isEditMode.value && currentFriendId.value !== null) {
+    updateFriend(
+      currentFriendId.value,
+      friendForm.value.name,
+      friendForm.value.phone,
+      friendForm.value.email
+    )
   } else {
-    const newFriend = {
-      id: Date.now(),
-      name: friendForm.value.name.trim(),
-      phone: friendForm.value.phone.trim(),
-      email: friendForm.value.email.trim(),
-      avatarBg: avatarClasses[friends.value.length % avatarClasses.length]
-    }
-    friends.value.push(newFriend)
-    saveToStorage()
+    addFriend(
+      friendForm.value.name,
+      friendForm.value.phone,
+      friendForm.value.email
+    )
   }
-  closeModal()
+  closeAddEditModal()
 }
 
-const deleteFriend = (id) => {
-  if (confirm(t('deleteConfirm'))) {
-    friends.value = friends.value.filter(f => f.id !== id)
-    saveToStorage()
+const triggerDelete = (id: string | number) => {
+  friendIdToDelete.value = id
+  showDeleteConfirmModal.value = true
+}
+
+const confirmDelete = () => {
+  if (friendIdToDelete.value !== null) {
+    deleteFriend(friendIdToDelete.value)
+    showDeleteConfirmModal.value = false
+    friendIdToDelete.value = null
   }
 }
 </script>
 
 <template>
   <div class="neubrutal-container">
-    <header class="app-header">
-      <NuxtLink to="/app" class="back-btn neubrutal-box">
-        <ArrowLeft :size="20" strokeWidth="2.5" />
-      </NuxtLink>
-      <h1 class="page-title">{{ t('friendsTitle') }}</h1>
-      <div style="width: 42px;"></div> <!-- Spacer to center the title -->
-    </header>
+    <AppHeader :title="t('friendsTitle')" back-route="/app" />
 
     <main class="app-main">
       <!-- Search & Add Bar -->
       <section class="action-bar-section">
         <div class="search-wrapper">
-          <Search :size="18" strokeWidth="2.5" class="search-icon" />
+          <Search :size="18" :stroke-width="2.5" class="search-icon" />
           <input 
             type="text" 
             v-model="searchQuery" 
@@ -132,9 +114,9 @@ const deleteFriend = (id) => {
             class="neubrutal-input search-input"
           />
         </div>
-        <button class="neubrutal-btn primary add-btn" @click="openAddModal">
-          <Plus :size="22" strokeWidth="3" />
-        </button>
+        <NeubrutalButton variant="primary" custom-class="add-btn" @click="openAddModal" :title="t('addFriendBtn')">
+          <Plus :size="24" :stroke-width="4" />
+        </NeubrutalButton>
       </section>
 
       <!-- Friends List -->
@@ -154,24 +136,22 @@ const deleteFriend = (id) => {
             :key="friend.id" 
             class="friend-card neubrutal-box"
           >
-            <div class="friend-avatar" :class="friend.avatarBg">
-              <span class="avatar-initial">{{ getInitials(friend.name) }}</span>
-            </div>
+            <FriendAvatar :name="friend.name" :avatar-bg="friend.avatarBg" size="sm" />
             
             <div class="friend-info">
               <span class="friend-name">{{ friend.name }}</span>
               <span class="friend-meta" v-if="friend.phone || friend.email">
-                <span v-if="friend.phone" class="meta-item"><Phone :size="10" strokeWidth="2.5" /> {{ friend.phone }}</span>
-                <span v-if="friend.email" class="meta-item"><Mail :size="10" strokeWidth="2.5" /> {{ friend.email }}</span>
+                <span v-if="friend.phone" class="meta-item"><Phone :size="10" :stroke-width="2.5" /> {{ friend.phone }}</span>
+                <span v-if="friend.email" class="meta-item"><Mail :size="10" :stroke-width="2.5" /> {{ friend.email }}</span>
               </span>
             </div>
             
             <div class="friend-actions">
               <button class="action-icon-btn edit" @click="openEditModal(friend)">
-                <Edit2 :size="16" strokeWidth="2.5" />
+                <Edit2 :size="16" :stroke-width="2.5" />
               </button>
-              <button class="action-icon-btn delete" @click="deleteFriend(friend.id)">
-                <Trash2 :size="16" strokeWidth="2.5" />
+              <button class="action-icon-btn delete" @click="triggerDelete(friend.id)">
+                <Trash2 :size="16" :stroke-width="2.5" />
               </button>
             </div>
           </div>
@@ -179,101 +159,98 @@ const deleteFriend = (id) => {
       </section>
     </main>
 
-    <!-- Reusable Neubrutalist Modal (Add / Edit) -->
-    <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
-      <div class="neubrutal-box modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title">{{ isEditMode ? t('editFriendTitle') : t('addFriendBtn') }}</h2>
-          <button class="close-modal-btn" @click="closeModal">
-            <X :size="20" strokeWidth="2.5" />
-          </button>
+    <!-- Unified Neubrutalist Modal (Add / Edit) -->
+    <NeubrutalModal :show="showAddEditModal" accent="primary" @close="closeAddEditModal">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <h2 class="modal-title">
+            <Edit2 v-if="isEditMode" class="title-icon" :size="20" :stroke-width="2.5" />
+            <UserPlus v-else class="title-icon" :size="20" :stroke-width="2.5" />
+            {{ isEditMode ? t('editFriendTitle') : t('addFriendBtn') }}
+          </h2>
+          <span class="modal-subtitle">
+            {{ isEditMode ? (language === 'en' ? 'Edit and update this friend\'s information' : 'Ubah dan sesuaikan informasi profil teman ini') : (language === 'en' ? 'Add a new friend to split bills with' : 'Tambah teman patungan baru ke dalam daftar') }}
+          </span>
+        </div>
+        <button class="close-modal-btn" @click="closeAddEditModal">
+          <X :size="20" :stroke-width="2.5" />
+        </button>
+      </div>
+      
+      <form @submit.prevent="handleSubmit" class="modal-body">
+        <div class="form-field">
+          <label class="form-label">{{ t('nameLabel') }} <span class="required">*</span></label>
+          <input 
+            type="text" 
+            v-model="friendForm.name" 
+            :placeholder="t('namePlaceholder')" 
+            class="neubrutal-input" 
+            required 
+          />
         </div>
         
-        <form @submit.prevent="handleSubmit" class="modal-body">
-          <div class="form-field">
-            <label class="form-label">{{ t('nameLabel') }} <span class="required">*</span></label>
-            <input 
-              type="text" 
-              v-model="friendForm.name" 
-              :placeholder="t('namePlaceholder')" 
-              class="neubrutal-input" 
-              required 
-            />
-          </div>
-          
-          <div class="form-field">
-            <label class="form-label">{{ t('phoneLabel') }}</label>
-            <input 
-              type="tel" 
-              v-model="friendForm.phone" 
-              :placeholder="t('phonePlaceholder')" 
-              class="neubrutal-input" 
-            />
-          </div>
-          
-          <div class="form-field">
-            <label class="form-label">{{ t('emailLabel') }}</label>
-            <input 
-              type="email" 
-              v-model="friendForm.email" 
-              :placeholder="t('emailPlaceholder')" 
-              class="neubrutal-input" 
-            />
-          </div>
+        <div class="form-field">
+          <label class="form-label">{{ t('phoneLabel') }}</label>
+          <input 
+            type="tel" 
+            v-model="friendForm.phone" 
+            :placeholder="t('phonePlaceholder')" 
+            class="neubrutal-input" 
+          />
+        </div>
+        
+        <div class="form-field">
+          <label class="form-label">{{ t('emailLabel') }}</label>
+          <input 
+            type="email" 
+            v-model="friendForm.email" 
+            :placeholder="t('emailPlaceholder')" 
+            class="neubrutal-input" 
+          />
+        </div>
 
-          <div class="modal-footer">
-            <button type="button" class="neubrutal-btn ghost modal-btn" @click="closeModal">
-              {{ t('cancel') }}
-            </button>
-            <button type="submit" class="neubrutal-btn primary modal-btn">
-              {{ t('save') }}
-            </button>
-          </div>
-        </form>
+        <div class="modal-footer">
+          <NeubrutalButton variant="ghost" custom-class="modal-btn" @click="closeAddEditModal">
+            {{ t('cancel') }}
+          </NeubrutalButton>
+          <NeubrutalButton type="submit" variant="primary" custom-class="modal-btn">
+            {{ t('save') }}
+          </NeubrutalButton>
+        </div>
+      </form>
+    </NeubrutalModal>
+
+    <!-- Beautiful Neubrutalist Delete Confirmation Modal -->
+    <NeubrutalModal :show="showDeleteConfirmModal" accent="danger" @close="showDeleteConfirmModal = false">
+      <div class="confirm-modal-body">
+        <div class="confirm-icon-wrapper neubrutal-box">
+          <Trash2 :size="32" :stroke-width="2.5" />
+        </div>
+        
+        <h2 class="confirm-title">{{ t('deleteFriendConfirmTitle') }}</h2>
+        <p class="confirm-text">
+          {{ t('deleteConfirm') }}
+        </p>
+        
+        <div class="confirm-actions-row">
+          <NeubrutalButton variant="ghost" custom-class="flex-1 confirm-btn-cancel" @click="showDeleteConfirmModal = false">
+            {{ t('cancel') }}
+          </NeubrutalButton>
+          <NeubrutalButton variant="danger" custom-class="flex-1 confirm-btn-yes save-btn-final" @click="confirmDelete">
+            {{ t('yesDelete') }}
+          </NeubrutalButton>
+        </div>
       </div>
-    </div>
+    </NeubrutalModal>
   </div>
 </template>
 
 <style scoped>
-.app-header {
-  padding: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.back-btn {
-  width: 42px;
-  height: 42px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  color: #111;
-  text-decoration: none;
-  background: white;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-hard-sm);
-}
-
-.back-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0px #111;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #111;
-  text-align: center;
-}
-
 .app-main {
-  padding: 0 24px 100px;
+  padding: 0 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
 }
 
 /* Action Bar (Search & Add Button) */
@@ -301,24 +278,28 @@ const deleteFriend = (id) => {
   padding-left: 44px !important;
 }
 
-.action-bar-section .add-btn {
-  width: 48px;
-  height: 48px;
-  padding: 0;
+:deep(.add-btn) {
+  width: 50px;
+  height: 50px;
+  padding: 0 !important;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-hard-sm);
+  box-shadow: var(--shadow-hard-sm) !important;
+  border: 3px solid #111 !important;
+  box-sizing: border-box;
 }
 
-.action-bar-section .add-btn:active {
-  box-shadow: 1px 1px 0px #111;
+:deep(.add-btn:active) {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px #111 !important;
 }
 
 .neubrutal-input {
   width: 100%;
+  height: 50px;
   padding: 12px 16px;
   border: 3px solid #111;
   border-radius: var(--radius-lg);
@@ -329,55 +310,46 @@ const deleteFriend = (id) => {
   outline: none;
   background: white;
   transition: background-color 0.2s;
+  box-sizing: border-box;
 }
 
 .neubrutal-input:focus {
   background-color: #FAF8F5;
 }
 
-/* Reusable Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 24px;
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 400px;
-  background: white;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: pop-modal 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes pop-modal {
-  from { transform: scale(0.85) translateY(15px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
+/* Modal Headers & Subtitles */
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   border-bottom: 3px solid #111;
   padding-bottom: 12px;
 }
 
+.modal-title-wrapper {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 4px;
+}
+
 .modal-title {
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 1.3rem;
+  font-weight: 900;
   color: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-icon {
+  color: #111;
+}
+
+.modal-subtitle {
+  font-size: 0.8rem;
+  color: #6B7280;
+  font-weight: 600;
 }
 
 .close-modal-btn {
@@ -400,12 +372,14 @@ const deleteFriend = (id) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: 18px;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  text-align: left;
 }
 
 .form-label {
@@ -424,20 +398,21 @@ const deleteFriend = (id) => {
   margin-top: 8px;
 }
 
-.modal-btn {
+:deep(.modal-btn) {
   flex: 1;
   padding: 12px 16px;
   font-size: 1rem;
-  box-shadow: var(--shadow-hard-sm);
+  box-shadow: var(--shadow-hard-sm) !important;
 }
 
-.modal-btn:active {
-  box-shadow: 1px 1px 0px #111;
+:deep(.modal-btn:active) {
+  box-shadow: 1px 1px 0px #111 !important;
 }
 
 /* Friends List Section */
 .section-header {
   margin-bottom: 16px;
+  text-align: left;
 }
 
 .section-title {
@@ -466,30 +441,6 @@ const deleteFriend = (id) => {
   gap: 14px;
   background: white;
   min-height: 74px;
-}
-
-.friend-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: var(--shadow-hard-sm);
-  border: 2px solid #111;
-  flex-shrink: 0;
-}
-
-.avatar-bg-0 { background: var(--mint-green); }
-.avatar-bg-1 { background: var(--pastel-blue); }
-.avatar-bg-2 { background: var(--soft-yellow); }
-.avatar-bg-3 { background: var(--peach); }
-
-.avatar-initial {
-  font-weight: 800;
-  font-size: 1rem;
-  color: #111;
-  font-family: 'Outfit', sans-serif;
 }
 
 .friend-info {
@@ -558,5 +509,63 @@ const deleteFriend = (id) => {
 .action-icon-btn.delete {
   background: #FEE2E2;
   color: #EF4444;
+}
+
+/* Neubrutalist Confirmation Modal Styles */
+.confirm-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 6px;
+}
+
+.confirm-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #FEE2E2;
+  color: #EF4444;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 18px;
+  border: 3.5px solid #111;
+  box-shadow: 3px 3px 0px #111;
+}
+
+.confirm-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #111;
+  margin-bottom: 10px;
+}
+
+.confirm-text {
+  font-size: 0.85rem;
+  color: #4B5563;
+  line-height: 1.5;
+  font-weight: 650;
+  margin-bottom: 24px;
+  padding: 0 10px;
+}
+
+.confirm-actions-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+:deep(.save-btn-final) {
+  background: #EF4444 !important;
+  color: white !important;
+  border: 3.5px solid #111 !important;
+  box-shadow: 4px 4px 0px #111 !important;
+  font-weight: 850 !important;
+}
+
+:deep(.save-btn-final:active) {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0px #111 !important;
 }
 </style>

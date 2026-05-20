@@ -603,3 +603,92 @@ h1, h2, h3, h4, h5, h6, .outfit-font {
   background-color: var(--box-bg-alt) !important; /* Beautiful dark screen phone mockup */
   border-color: var(--border-color) !important;
 }
+
+/* Preview Page Dark Mode Styles */
+.dark-theme .bill-info-summary-card,
+.dark-theme .share-row-card {
+  background-color: var(--box-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.dark-theme .bill-preview-title,
+.dark-theme .share-name,
+.dark-theme .share-total-amount,
+.dark-theme .expand-arrow-btn,
+.dark-theme .section-divider-title,
+.dark-theme .drawer-item-name,
+.dark-theme .drawer-item-cost,
+.dark-theme .total-row,
+.dark-theme .highlight-total {
+  color: var(--text-color) !important;
+}
+
+.dark-theme .cost-summary-item,
+.dark-theme .share-items-count,
+.dark-theme .bill-preview-date,
+.dark-theme .drawer-item-portion {
+  color: var(--text-color-muted) !important;
+}
+
+.dark-theme .divider-line {
+  background: var(--text-color) !important;
+  opacity: 0.15;
+}
+
+.dark-theme .section-divider-title {
+  border-bottom-color: var(--border-color) !important;
+}
+
+.dark-theme .drawer-divider {
+  border-bottom-color: var(--box-bg-alt) !important;
+}
+
+/* Global Mobile Responsive Design System Upgrades (Screens <= 400px) */
+@media (max-width: 400px) {
+  :root {
+    --shadow-hard: 3px 3px 0px var(--border-color);
+  }
+
+  .app-header {
+    padding: 16px 16px !important;
+  }
+
+  .app-main {
+    padding: 0 16px 80px !important;
+    gap: 20px !important;
+  }
+
+  .page-title {
+    font-size: 1.4rem !important;
+  }
+
+  /* Scale down Neubrutalist Buttons */
+  .neubrutal-btn {
+    padding: 12px 18px;
+    font-size: 1rem;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Scale down Neubrutalist Inputs & Select Elements */
+  .neubrutal-input,
+  .neubrutal-select {
+    padding: 10px 14px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Fix currency grid clipping on settings page */
+  .currency-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  .currency-btn {
+    height: 38px !important;
+  }
+
+  .currency-symbol {
+    font-size: 0.85rem !important;
+  }
+}
+

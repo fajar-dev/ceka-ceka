@@ -1,20 +1,21 @@
 import { useState } from '#app'
+import type { Ref } from 'vue'
 
 export const useCekaSettings = () => {
-  const theme = useState('ceka_theme', () => 'light')
-  const language = useState('ceka_language', () => 'id')
-  const currency = useState('ceka_currency', () => 'Rp')
+  const theme = useState<'light' | 'dark'>('ceka_theme', () => 'light')
+  const language = useState<'id' | 'en'>('ceka_language', () => 'id')
+  const currency = useState<string>('ceka_currency', () => 'Rp')
 
-  const loadSettings = () => {
+  const loadSettings = (): void => {
     if (process.client) {
-      theme.value = localStorage.getItem('ceka_theme') || 'light'
-      language.value = localStorage.getItem('ceka_language') || 'id'
+      theme.value = (localStorage.getItem('ceka_theme') as 'light' | 'dark') || 'light'
+      language.value = (localStorage.getItem('ceka_language') as 'id' | 'en') || 'id'
       currency.value = localStorage.getItem('ceka_currency') || 'Rp'
       applyTheme()
     }
   }
 
-  const setTheme = (val) => {
+  const setTheme = (val: 'light' | 'dark'): void => {
     theme.value = val
     if (process.client) {
       localStorage.setItem('ceka_theme', val)
@@ -22,21 +23,21 @@ export const useCekaSettings = () => {
     }
   }
 
-  const setLanguage = (val) => {
+  const setLanguage = (val: 'id' | 'en'): void => {
     language.value = val
     if (process.client) {
       localStorage.setItem('ceka_language', val)
     }
   }
 
-  const setCurrency = (val) => {
+  const setCurrency = (val: string): void => {
     currency.value = val
     if (process.client) {
       localStorage.setItem('ceka_currency', val)
     }
   }
 
-  const applyTheme = () => {
+  const applyTheme = (): void => {
     if (process.client) {
       if (theme.value === 'dark') {
         document.documentElement.classList.add('dark-theme')
@@ -47,8 +48,8 @@ export const useCekaSettings = () => {
   }
 
   // Translation helper
-  const t = (key) => {
-    const translations = {
+  const t = (key: string): string => {
+    const translations: Record<'id' | 'en', Record<string, string>> = {
       id: {
         settingsTitle: 'Pengaturan',
         back: 'Kembali',
@@ -90,6 +91,8 @@ export const useCekaSettings = () => {
         save: 'Simpan',
         emptyFriends: 'Daftar teman kosong. Silakan tambahkan teman patungan baru!',
         deleteConfirm: 'Apakah Anda yakin ingin menghapus teman ini dari daftar patungan?',
+        deleteFriendConfirmTitle: 'Hapus Teman Patungan?',
+        yesDelete: 'Ya, Hapus',
         // Landing Page
         landingTitle: 'Bagi Tagihan Praktis,<br/>Hubungan Tetap Harmonis',
         landingSubtitle: 'Pindai struk belanja, bagi porsi patungan secara akurat, dan selesaikan tagihan tanpa selisih.',
@@ -154,6 +157,10 @@ export const useCekaSettings = () => {
         feeAmountLabel: 'Jumlah',
         totalBill: 'TOTAL TAGIHAN',
         saveBillBtn: 'Simpan Tagihan',
+        previewSplitBtn: 'Pratinjau Patungan',
+        backToEditBtn: 'Kembali Edit',
+        previewSplitTitle: 'Detail Patungan',
+        previewSplitSubtitle: 'Periksa rincian pembayaran per orang sebelum menyimpan',
         selectFriends: 'Pilih Teman Patungan',
         participatingSubtitle: 'Pilih siapa saja yang ikut berpartisipasi',
         searchFriendPlaceholder: 'Cari nama teman...',
@@ -215,6 +222,8 @@ export const useCekaSettings = () => {
         save: 'Save',
         emptyFriends: 'Friends list is empty. Please add a new friend!',
         deleteConfirm: 'Are you sure you want to delete this friend?',
+        deleteFriendConfirmTitle: 'Delete Friend?',
+        yesDelete: 'Yes, Delete',
         // Landing Page
         landingTitle: 'Split Bills Easily,<br/>Keep Friendships Warm',
         landingSubtitle: 'Scan your receipts, split portions accurately, and settle shares without any disputes.',
@@ -279,6 +288,10 @@ export const useCekaSettings = () => {
         feeAmountLabel: 'Amount',
         totalBill: 'TOTAL BILL',
         saveBillBtn: 'Save Bill',
+        previewSplitBtn: 'Preview Split',
+        backToEditBtn: 'Go Back',
+        previewSplitTitle: 'Split Preview',
+        previewSplitSubtitle: 'Verify individual shares before saving',
         selectFriends: 'Select Split Friends',
         participatingSubtitle: 'Select who is participating in this bill',
         searchFriendPlaceholder: 'Search friends...',
@@ -301,7 +314,7 @@ export const useCekaSettings = () => {
       }
     }
 
-    const lang = language.value === 'en' ? 'en' : 'id'
+    const lang: 'id' | 'en' = language.value === 'en' ? 'en' : 'id'
     return translations[lang][key] || key
   }
 

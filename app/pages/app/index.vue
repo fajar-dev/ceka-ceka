@@ -1,52 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Settings, LogOut, Camera, PenTool, Sparkles, FileText, Pizza, Coffee, User, Plus } from '@lucide/vue'
+import { Settings, LogOut, Camera, PenTool, Sparkles, FileText, Pizza, Coffee, Plus } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
+import { useCekaFriends } from '~/composables/useCekaFriends'
+import { useCekaHistory } from '~/composables/useCekaHistory'
 
-const { currency, loadSettings, t } = useCekaSettings()
+const { currency, loadSettings, t, language } = useCekaSettings()
+const { listFriendsOnly, loadFriends } = useCekaFriends()
+const { history, loadHistory } = useCekaHistory()
 
 const isDropdownOpen = ref(false)
-const friends = ref([])
-const history = ref([])
 
 onMounted(() => {
   loadSettings()
-  
-  // Load Friends
-  const savedFriends = localStorage.getItem('ceka_friends')
-  if (savedFriends) {
-    friends.value = JSON.parse(savedFriends)
-  } else {
-    friends.value = [
-      { id: 1, name: 'Budi Pekerti', avatarBg: 'avatar-bg-0' },
-      { id: 2, name: 'Siti Rahma', avatarBg: 'avatar-bg-1' },
-      { id: 3, name: 'Joko Widodo', avatarBg: 'avatar-bg-2' },
-      { id: 4, name: 'Dewi Lestari', avatarBg: 'avatar-bg-3' },
-      { id: 5, name: 'Rian Adriansyah', avatarBg: 'avatar-bg-0' }
-    ]
-    localStorage.setItem('ceka_friends', JSON.stringify(friends.value))
-  }
+  loadFriends()
+  loadHistory()
 
-  // Load History
-  const savedHistory = localStorage.getItem('ceka_history')
-  if (savedHistory) {
-    history.value = JSON.parse(savedHistory)
-  } else {
-    history.value = [
-      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0' },
-      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1' },
-      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2' }
+  // Seed default history if empty
+  if (process.client && history.value.length === 0) {
+    const seed = [
+      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 120000, subtotalOtherFees: 0 },
+      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 250000, subtotalOtherFees: 0 },
+      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 85000, subtotalOtherFees: 0 }
     ]
-    localStorage.setItem('ceka_history', JSON.stringify(history.value))
+    localStorage.setItem('ceka_history', JSON.stringify(seed))
+    loadHistory()
   }
 })
 
-const getInitials = (name) => {
-  if (!name) return ''
-  return name.trim().split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-}
-
-const getIconComponent = (type) => {
+const getIconComponent = (type: string) => {
   switch (type) {
     case 'pizza': return Pizza
     case 'coffee': return Coffee
@@ -54,12 +36,12 @@ const getIconComponent = (type) => {
   }
 }
 
-const formatCurrency = (val) => {
+const formatCurrency = (val: number) => {
   const formatted = new Intl.NumberFormat('id-ID').format(val)
   return `${currency.value} ${formatted}`
 }
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -117,11 +99,13 @@ const formatDate = (dateStr) => {
 
       <!-- Main Actions -->
       <section class="action-section">
-        <NuxtLink to="/app/scan" class="neubrutal-btn secondary action-btn" style="text-decoration: none; color: inherit;">
-          <span><Camera :size="18" /> {{ t('scanReceipt') }}</span>
+        <NuxtLink to="/app/scan" class="neubrutal-btn secondary action-btn flex-1" style="text-decoration: none; color: inherit;">
+          <Camera :size="18" :stroke-width="2.5" />
+          <span>{{ t('scanReceipt') }}</span>
         </NuxtLink>
-        <NuxtLink to="/app/bill" class="neubrutal-btn ghost action-btn" style="text-decoration: none; color: inherit;">
-          <span><PenTool :size="18" /> {{ t('inputManual') }}</span>
+        <NuxtLink to="/app/bill" class="neubrutal-btn ghost action-btn flex-1" style="text-decoration: none; color: inherit;">
+          <PenTool :size="18" :stroke-width="2.5" />
+          <span>{{ t('inputManual') }}</span>
         </NuxtLink>
       </section>
 
@@ -133,18 +117,9 @@ const formatDate = (dateStr) => {
         </div>
         
         <div class="friends-scroll-container">
-          <!-- Add friend button -->
-          <NuxtLink to="/app/friend" class="friend-item add-friend" style="text-decoration: none; color: inherit;">
-            <div class="friend-avatar neubrutal-box add-avatar">
-              <Plus :size="28" strokeWidth="3" />
-            </div>
-          </NuxtLink>
-
           <!-- Friend items (Dynamic Data) -->
-          <div class="friend-item" v-for="friend in friends" :key="friend.id">
-            <div class="friend-avatar neubrutal-box" :class="friend.avatarBg">
-              <span class="avatar-initial">{{ getInitials(friend.name) }}</span>
-            </div>
+          <div class="friend-item" v-for="friend in listFriendsOnly" :key="friend.id">
+            <FriendAvatar :name="friend.name" :avatar-bg="friend.avatarBg" size="xl" />
             <span class="friend-name">{{ friend.name.split(' ')[0] }}</span>
           </div>
         </div>
@@ -250,6 +225,7 @@ const formatDate = (dateStr) => {
   align-items: center;
   gap: 8px;
   transition: background 0.2s;
+  text-align: left;
 }
 
 .dropdown-item:active {
@@ -279,12 +255,12 @@ const formatDate = (dateStr) => {
 }
 
 .action-btn {
-  flex: 1;
-  padding: 16px 8px;
-  font-size: 1.1rem;
+  padding: 14px 8px;
+  font-size: 1.05rem;
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 8px;
 }
 
 .action-btn span {
@@ -292,6 +268,7 @@ const formatDate = (dateStr) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .neubrutal-btn.secondary {
@@ -315,6 +292,7 @@ const formatDate = (dateStr) => {
 
 .summary-content {
   z-index: 2;
+  text-align: left;
 }
 
 .summary-label {
@@ -417,6 +395,7 @@ const formatDate = (dateStr) => {
   font-weight: 700;
   color: #666;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .friends-scroll-container {
@@ -425,6 +404,8 @@ const formatDate = (dateStr) => {
   overflow-x: auto;
   padding-bottom: 12px; /* For shadow */
   scrollbar-width: none; /* Firefox */
+  text-align: center;
+  align-items: center;
 }
 .friends-scroll-container::-webkit-scrollbar {
   display: none; /* Chrome */
@@ -435,48 +416,33 @@ const formatDate = (dateStr) => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  min-width: 64px;
+  min-width: 80px;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
-.friend-item:active .friend-avatar {
+.friend-item:active :deep(.friend-avatar) {
   transform: translate(2px, 2px);
-  box-shadow: var(--shadow-hard-sm);
-}
-
-.friend-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: var(--shadow-hard);
-  transition: all 0.2s;
-  border: 3px solid #111;
+  box-shadow: var(--shadow-hard-sm) !important;
 }
 
 .add-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
   background: white;
-  border: 2px dashed #111;
+  border: 3px dashed #111;
   box-shadow: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
 }
 .add-avatar svg {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   color: #111;
-}
-
-.avatar-bg-0 { background: var(--mint-green); }
-.avatar-bg-1 { background: var(--pastel-blue); }
-.avatar-bg-2 { background: var(--soft-yellow); }
-.avatar-bg-3 { background: var(--peach); }
-
-.avatar-initial {
-  font-weight: 800;
-  font-size: 1.2rem;
-  color: #111;
-  font-family: 'Outfit', sans-serif;
 }
 
 .friend-name {
@@ -500,6 +466,8 @@ const formatDate = (dateStr) => {
   gap: 16px;
   transition: transform 0.2s;
   cursor: pointer;
+  background: white;
+  text-align: left;
 }
 .history-card:active {
   transform: translate(2px, 2px);
@@ -547,5 +515,54 @@ const formatDate = (dateStr) => {
   font-weight: 800;
   font-size: 1rem;
   color: #111;
+}
+
+@media (max-width: 400px) {
+  .app-header {
+    padding: 16px 12px;
+  }
+  .app-main {
+    padding: 0 12px 80px;
+    gap: 24px;
+  }
+  .page-title {
+    font-size: 1.5rem;
+  }
+  .summary-card {
+    padding: 16px;
+  }
+  .summary-amount {
+    font-size: 1.5rem;
+  }
+  .action-section {
+    gap: 8px !important;
+  }
+  .action-btn {
+    padding: 12px 6px !important;
+    font-size: 0.85rem !important;
+    gap: 6px !important;
+  }
+  .action-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .action-btn span {
+    gap: 6px !important;
+  }
+  .history-card {
+    padding: 12px;
+    gap: 12px;
+  }
+  .history-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+  .history-title {
+    font-size: 0.9rem;
+  }
+  .history-amount {
+    font-size: 0.9rem;
+  }
 }
 </style>

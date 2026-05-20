@@ -1,17 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { ArrowLeft, Plus, Trash2, Edit2, X, Search, Pizza, Coffee, FileText, Calendar, Users } from '@lucide/vue'
+import { Trash2, Edit2, X, Search, Pizza, Coffee, FileText, Calendar, Users } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
+import { useCekaHistory } from '~/composables/useCekaHistory'
+import type { HistoryRecord } from '~/types'
 
 const { currency, loadSettings, t } = useCekaSettings()
+const { history, loadHistory, deleteRecord } = useCekaHistory()
 
-const history = ref([])
 const searchQuery = ref('')
 
 // Modal State
-const showModal = ref(false)
+const showAddEditModal = ref(false)
 const isEditMode = ref(false)
-const currentItemId = ref(null)
+const currentItemId = ref<number | null>(null)
 const itemForm = ref({
   title: '',
   amount: '',
@@ -29,26 +31,21 @@ const iconOptions = [
 
 onMounted(() => {
   loadSettings()
-  
-  const saved = localStorage.getItem('ceka_history')
-  if (saved) {
-    history.value = JSON.parse(saved)
-  } else {
-    // Initial default history
-    history.value = [
-      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0' },
-      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1' },
-      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2' }
+  loadHistory()
+
+  // Seed default history if empty
+  if (process.client && history.value.length === 0) {
+    const seed = [
+      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 120000, subtotalOtherFees: 0 },
+      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 250000, subtotalOtherFees: 0 },
+      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 85000, subtotalOtherFees: 0 }
     ]
-    saveToStorage()
+    localStorage.setItem('ceka_history', JSON.stringify(seed))
+    loadHistory()
   }
 })
 
-const saveToStorage = () => {
-  localStorage.setItem('ceka_history', JSON.stringify(history.value))
-}
-
-const getIconComponent = (type) => {
+const getIconComponent = (type: string) => {
   switch (type) {
     case 'pizza': return Pizza
     case 'coffee': return Coffee
@@ -56,17 +53,17 @@ const getIconComponent = (type) => {
   }
 }
 
-const getIconBgClass = (type) => {
+const getIconBgClass = (type: string) => {
   const opt = iconOptions.find(o => o.value === type)
   return opt ? opt.bgClass : 'icon-bg-0'
 }
 
-const formatCurrency = (val) => {
+const formatCurrency = (val: number) => {
   const formatted = new Intl.NumberFormat('id-ID').format(val)
   return `${currency.value} ${formatted}`
 }
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -74,41 +71,29 @@ const formatDate = (dateStr) => {
 }
 
 // Search Logic
-const filteredHistory = computed(() => {
-  if (!searchQuery.value.trim()) return history.value
+const filteredHistory = computed((): HistoryRecord[] => {
+  const list = history.value
+  if (!searchQuery.value.trim()) return list
   const query = searchQuery.value.toLowerCase().trim()
-  return history.value.filter(item => item.title.toLowerCase().includes(query))
+  return list.filter(item => item.title.toLowerCase().includes(query))
 })
 
 // Modal Logic
-const openAddModal = () => {
-  isEditMode.value = false
-  const today = new Date().toISOString().substring(0, 10)
-  itemForm.value = {
-    title: '',
-    amount: '',
-    date: today,
-    peopleCount: 2,
-    iconType: 'file'
-  }
-  showModal.value = true
-}
-
-const openEditModal = (item) => {
+const openEditModal = (item: HistoryRecord) => {
   isEditMode.value = true
   currentItemId.value = item.id
   itemForm.value = {
     title: item.title,
-    amount: item.amount,
+    amount: String(item.amount),
     date: item.date,
     peopleCount: item.peopleCount || 2,
     iconType: item.iconType || 'file'
   }
-  showModal.value = true
+  showAddEditModal.value = true
 }
 
-const closeModal = () => {
-  showModal.value = false
+const closeAddEditModal = () => {
+  showAddEditModal.value = false
 }
 
 const handleSubmit = () => {
@@ -116,56 +101,42 @@ const handleSubmit = () => {
   
   const parsedAmount = parseInt(itemForm.value.amount) || 0
   
-  if (isEditMode.value) {
-    const item = history.value.find(h => h.id === currentItemId.value)
-    if (item) {
-      item.title = itemForm.value.title.trim()
-      item.amount = parsedAmount
-      item.date = itemForm.value.date
-      item.peopleCount = parseInt(itemForm.value.peopleCount) || 2
-      item.iconType = itemForm.value.iconType
-      item.iconBg = getIconBgClass(itemForm.value.iconType)
-      saveToStorage()
+  if (isEditMode.value && currentItemId.value !== null) {
+    const list = [...history.value]
+    const idx = list.findIndex(h => h.id === currentItemId.value)
+    if (idx !== -1) {
+      list[idx] = {
+        ...list[idx],
+        title: itemForm.value.title.trim(),
+        amount: parsedAmount,
+        date: itemForm.value.date,
+        peopleCount: Number(itemForm.value.peopleCount) || 2,
+        iconType: itemForm.value.iconType,
+        iconBg: getIconBgClass(itemForm.value.iconType)
+      }
+      localStorage.setItem('ceka_history', JSON.stringify(list))
+      loadHistory()
     }
-  } else {
-    const newItem = {
-      id: Date.now(),
-      title: itemForm.value.title.trim(),
-      amount: parsedAmount,
-      date: itemForm.value.date,
-      peopleCount: parseInt(itemForm.value.peopleCount) || 2,
-      iconType: itemForm.value.iconType,
-      iconBg: getIconBgClass(itemForm.value.iconType)
-    }
-    history.value.unshift(newItem) // Add to top of list
-    saveToStorage()
   }
-  closeModal()
+  closeAddEditModal()
 }
 
-const deleteItem = (id) => {
+const triggerDelete = (id: number) => {
   if (confirm(t('deleteHistoryConfirm'))) {
-    history.value = history.value.filter(h => h.id !== id)
-    saveToStorage()
+    deleteRecord(id)
   }
 }
 </script>
 
 <template>
   <div class="neubrutal-container">
-    <header class="app-header">
-      <NuxtLink to="/app" class="back-btn neubrutal-box">
-        <ArrowLeft :size="20" strokeWidth="2.5" />
-      </NuxtLink>
-      <h1 class="page-title">{{ t('historyTitle') }}</h1>
-      <div style="width: 42px;"></div> <!-- Spacer to center the title -->
-    </header>
+    <AppHeader :title="t('historyTitle')" back-route="/app" />
 
     <main class="app-main">
       <!-- Search & Add Bar -->
       <section class="action-bar-section">
         <div class="search-wrapper">
-          <Search :size="18" strokeWidth="2.5" class="search-icon" />
+          <Search :size="18" :stroke-width="2.5" class="search-icon" />
           <input 
             type="text" 
             v-model="searchQuery" 
@@ -199,19 +170,19 @@ const deleteItem = (id) => {
             <div class="history-details">
               <h3 class="history-title">{{ item.title }}</h3>
               <p class="history-meta">
-                <span class="meta-item"><Calendar :size="11" strokeWidth="2.5" /> {{ formatDate(item.date) }}</span>
-                <span class="meta-item"><Users :size="11" strokeWidth="2.5" /> {{ item.peopleCount }} {{ t('friendLabel') }}</span>
+                <span class="meta-item"><Calendar :size="11" :stroke-width="2.5" /> {{ formatDate(item.date) }}</span>
+                <span class="meta-item"><Users :size="11" :stroke-width="2.5" /> {{ item.peopleCount }} {{ t('friendLabel') }}</span>
               </p>
             </div>
             
             <div class="history-right-wrapper">
-              <div class="history-amount">Rp {{ formatCurrency(item.amount) }}</div>
+              <div class="history-amount">{{ formatCurrency(item.amount) }}</div>
               <div class="history-actions">
                 <button class="action-icon-btn edit" @click="openEditModal(item)">
-                  <Edit2 :size="14" strokeWidth="2.5" />
+                  <Edit2 :size="14" :stroke-width="2.5" />
                 </button>
-                <button class="action-icon-btn delete" @click="deleteItem(item.id)">
-                  <Trash2 :size="14" strokeWidth="2.5" />
+                <button class="action-icon-btn delete" @click="triggerDelete(item.id)">
+                  <Trash2 :size="14" :stroke-width="2.5" />
                 </button>
               </div>
             </div>
@@ -220,132 +191,97 @@ const deleteItem = (id) => {
       </section>
     </main>
 
-    <!-- Reusable Neubrutalist Modal (Add / Edit) -->
-    <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
-      <div class="neubrutal-box modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title">{{ isEditMode ? t('editBillTitle') : t('addBillTitle') }}</h2>
-          <button class="close-modal-btn" @click="closeModal">
-            <X :size="20" strokeWidth="2.5" />
-          </button>
+    <!-- Reusable Neubrutalist Modal (Edit only, full flow is created from manual/split preview) -->
+    <NeubrutalModal :show="showAddEditModal" accent="warning" @close="closeAddEditModal">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ t('editBillTitle') }}</h2>
+        <button class="close-modal-btn" @click="closeAddEditModal">
+          <X :size="20" :stroke-width="2.5" />
+        </button>
+      </div>
+      
+      <form @submit.prevent="handleSubmit" class="modal-body">
+        <div class="form-field">
+          <label class="form-label">{{ t('billNameLabel') }} <span class="required">*</span></label>
+          <input 
+            type="text" 
+            v-model="itemForm.title" 
+            placeholder="e.g. Bakso Lapangan Tembak" 
+            class="neubrutal-input" 
+            required 
+          />
         </div>
         
-        <form @submit.prevent="handleSubmit" class="modal-body">
-          <div class="form-field">
-            <label class="form-label">{{ t('billNameLabel') }} <span class="required">*</span></label>
+        <div class="form-field">
+          <label class="form-label">{{ t('billAmountLabel') }} (Rp) <span class="required">*</span></label>
+          <input 
+            type="number" 
+            v-model="itemForm.amount" 
+            placeholder="e.g. 150000" 
+            class="neubrutal-input" 
+            required 
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field flex-1">
+            <label class="form-label">{{ t('eventDateLabel') }} <span class="required">*</span></label>
             <input 
-              type="text" 
-              v-model="itemForm.title" 
-              placeholder="e.g. Bakso Lapangan Tembak" 
+              type="date" 
+              v-model="itemForm.date" 
               class="neubrutal-input" 
               required 
             />
           </div>
-          
-          <div class="form-field">
-            <label class="form-label">{{ t('billAmountLabel') }} (Rp) <span class="required">*</span></label>
+          <div class="form-field flex-1">
+            <label class="form-label">{{ t('peopleCountLabel') }} <span class="required">*</span></label>
             <input 
               type="number" 
-              v-model="itemForm.amount" 
-              placeholder="e.g. 150000" 
+              v-model="itemForm.peopleCount" 
+              placeholder="2" 
+              min="1" 
               class="neubrutal-input" 
               required 
             />
           </div>
+        </div>
 
-          <div class="form-row">
-            <div class="form-field flex-1">
-              <label class="form-label">{{ t('eventDateLabel') }} <span class="required">*</span></label>
+        <div class="form-field">
+          <label class="form-label">{{ t('eventCategoryLabel') }}</label>
+          <div class="icon-selector">
+            <label 
+              v-for="opt in iconOptions" 
+              :key="opt.value"
+              class="icon-option neubrutal-box"
+              :class="{ active: itemForm.iconType === opt.value }"
+            >
               <input 
-                type="date" 
-                v-model="itemForm.date" 
-                class="neubrutal-input" 
-                required 
+                type="radio" 
+                name="iconType" 
+                :value="opt.value" 
+                v-model="itemForm.iconType" 
+                class="hidden-radio"
               />
-            </div>
-            <div class="form-field flex-1">
-              <label class="form-label">{{ t('peopleCountLabel') }} <span class="required">*</span></label>
-              <input 
-                type="number" 
-                v-model="itemForm.peopleCount" 
-                placeholder="2" 
-                min="1" 
-                class="neubrutal-input" 
-                required 
-              />
-            </div>
+              <component :is="opt.icon" :size="20" />
+              <span class="icon-label">{{ opt.value === 'file' ? t('catGeneral') : opt.value === 'pizza' ? t('catJunk') : t('catCafe') }}</span>
+            </label>
           </div>
+        </div>
 
-          <div class="form-field">
-            <label class="form-label">{{ t('eventCategoryLabel') }}</label>
-            <div class="icon-selector">
-              <label 
-                v-for="opt in iconOptions" 
-                :key="opt.value"
-                class="icon-option neubrutal-box"
-                :class="{ active: itemForm.iconType === opt.value }"
-              >
-                <input 
-                  type="radio" 
-                  name="iconType" 
-                  :value="opt.value" 
-                  v-model="itemForm.iconType" 
-                  class="hidden-radio"
-                />
-                <component :is="opt.icon" :size="20" />
-                <span class="icon-label">{{ opt.value === 'file' ? t('catGeneral') : opt.value === 'pizza' ? t('catJunk') : t('catCafe') }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="neubrutal-btn ghost modal-btn" @click="closeModal">
-              {{ t('cancel') }}
-            </button>
-            <button type="submit" class="neubrutal-btn primary modal-btn">
-              {{ t('save') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div class="modal-footer">
+          <NeubrutalButton variant="ghost" custom-class="modal-btn" @click="closeAddEditModal">
+            {{ t('cancel') }}
+          </NeubrutalButton>
+          <NeubrutalButton type="submit" variant="primary" custom-class="modal-btn">
+            {{ t('save') }}
+          </NeubrutalButton>
+        </div>
+      </form>
+    </NeubrutalModal>
   </div>
 </template>
 
 <style scoped>
-.app-header {
-  padding: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.back-btn {
-  width: 42px;
-  height: 42px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  color: #111;
-  text-decoration: none;
-  background: white;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-hard-sm);
-}
-
-.back-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0px #111;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #111;
-  text-align: center;
-}
-
 .app-main {
   padding: 0 24px 100px;
   display: flex;
@@ -378,22 +314,6 @@ const deleteItem = (id) => {
   padding-left: 44px !important;
 }
 
-.action-bar-section .add-btn {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-hard-sm);
-}
-
-.action-bar-section .add-btn:active {
-  box-shadow: 1px 1px 0px #111;
-}
-
 .neubrutal-input {
   width: 100%;
   padding: 12px 16px;
@@ -412,37 +332,7 @@ const deleteItem = (id) => {
   background-color: #FAF8F5;
 }
 
-/* Modal Styling */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 24px;
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 420px;
-  background: white;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: pop-modal 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes pop-modal {
-  from { transform: scale(0.85) translateY(15px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
+/* Modal Headers */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -472,6 +362,7 @@ const deleteItem = (id) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: 18px;
 }
 
 .form-row {
@@ -487,6 +378,7 @@ const deleteItem = (id) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  text-align: left;
 }
 
 .form-label {
@@ -520,9 +412,9 @@ const deleteItem = (id) => {
 }
 
 .icon-option.active {
-  background: var(--soft-yellow);
+  background: var(--soft-yellow) !important;
   transform: translate(2px, 2px);
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 .hidden-radio {
@@ -541,20 +433,21 @@ const deleteItem = (id) => {
   margin-top: 8px;
 }
 
-.modal-btn {
+:deep(.modal-btn) {
   flex: 1;
   padding: 12px 16px;
   font-size: 1rem;
-  box-shadow: var(--shadow-hard-sm);
+  box-shadow: var(--shadow-hard-sm) !important;
 }
 
-.modal-btn:active {
-  box-shadow: 1px 1px 0px #111;
+:deep(.modal-btn:active) {
+  box-shadow: 1px 1px 0px #111 !important;
 }
 
 /* History Section */
 .section-header {
   margin-bottom: 16px;
+  text-align: left;
 }
 
 .section-title {
@@ -584,6 +477,7 @@ const deleteItem = (id) => {
   background: white;
   transition: transform 0.2s;
   cursor: default;
+  text-align: left;
 }
 
 .history-icon {

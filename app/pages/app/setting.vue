@@ -1,6 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ArrowLeft, Save, Globe, Sun, Moon, Coins, Check } from '@lucide/vue'
+import { Save, Globe, Sun, Moon, Coins, Check } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
 
 const { theme, language, currency, setTheme, setLanguage, setCurrency, t } = useCekaSettings()
@@ -17,8 +17,8 @@ const handleSave = () => {
 onMounted(() => {
   // Ensure settings are loaded
   if (process.client) {
-    const savedTheme = localStorage.getItem('ceka_theme') || 'light'
-    const savedLang = localStorage.getItem('ceka_language') || 'id'
+    const savedTheme = (localStorage.getItem('ceka_theme') as 'light' | 'dark') || 'light'
+    const savedLang = (localStorage.getItem('ceka_language') as 'id' | 'en') || 'id'
     const savedCurr = localStorage.getItem('ceka_currency') || 'Rp'
     setTheme(savedTheme)
     setLanguage(savedLang)
@@ -29,118 +29,125 @@ onMounted(() => {
 
 <template>
   <div class="neubrutal-container">
-    <header class="app-header">
-      <NuxtLink to="/app" class="back-btn neubrutal-box">
-        <ArrowLeft :size="20" strokeWidth="2.5" />
-      </NuxtLink>
-      <h1 class="page-title">{{ t('settingsTitle') }}</h1>
-      <div style="width: 42px;"></div> <!-- Spacer -->
-    </header>
+    <AppHeader :title="t('settingsTitle')" back-route="/app" />
 
     <main class="app-main">
       <section class="settings-content">
         
-        <!-- Theme Setting Card -->
+        <!-- Unified Settings Card -->
         <div class="settings-card neubrutal-box bg-white">
-          <div class="setting-item-header">
-            <div class="setting-info">
-              <h2 class="setting-label-title"><Sun v-if="theme === 'light'" :size="18" /><Moon v-else :size="18" /> {{ t('themeLabel') }}</h2>
-              <p class="setting-desc">{{ t('themeDesc') }}</p>
+          <!-- Theme Setting Section -->
+          <div class="setting-section">
+            <div class="setting-item-header">
+              <div class="setting-info">
+                <h2 class="setting-label-title">
+                  <Sun v-if="theme === 'light'" :size="18" />
+                  <Moon v-else :size="18" />
+                  {{ t('themeLabel') }}
+                </h2>
+                <p class="setting-desc">{{ t('themeDesc') }}</p>
+              </div>
+            </div>
+
+            <div class="theme-toggle-grid">
+              <button 
+                type="button" 
+                class="theme-btn neubrutal-box" 
+                :class="{ active: theme === 'light' }"
+                @click="setTheme('light')"
+              >
+                <Sun :size="20" :stroke-width="2.5" />
+                <span>{{ t('lightMode') }}</span>
+              </button>
+              
+              <button 
+                type="button" 
+                class="theme-btn neubrutal-box" 
+                :class="{ active: theme === 'dark' }"
+                @click="setTheme('dark')"
+              >
+                <Moon :size="20" :stroke-width="2.5" />
+                <span>{{ t('darkMode') }}</span>
+              </button>
             </div>
           </div>
 
-          <div class="theme-toggle-grid">
-            <button 
-              type="button" 
-              class="theme-btn neubrutal-box" 
-              :class="{ active: theme === 'light' }"
-              @click="setTheme('light')"
-            >
-              <Sun :size="20" strokeWidth="2.5" />
-              <span>{{ t('lightMode') }}</span>
-            </button>
-            
-            <button 
-              type="button" 
-              class="theme-btn neubrutal-box" 
-              :class="{ active: theme === 'dark' }"
-              @click="setTheme('dark')"
-            >
-              <Moon :size="20" strokeWidth="2.5" />
-              <span>{{ t('darkMode') }}</span>
-            </button>
-          </div>
-        </div>
+          <div class="setting-divider"></div>
 
-        <!-- Language Setting Card -->
-        <div class="settings-card neubrutal-box bg-white">
-          <div class="setting-item-header">
-            <div class="setting-info">
-              <h2 class="setting-label-title"><Globe :size="18" /> {{ t('langLabel') }}</h2>
-              <p class="setting-desc">{{ t('langDesc') }}</p>
+          <!-- Language Setting Section -->
+          <div class="setting-section">
+            <div class="setting-item-header">
+              <div class="setting-info">
+                <h2 class="setting-label-title"><Globe :size="18" /> {{ t('langLabel') }}</h2>
+                <p class="setting-desc">{{ t('langDesc') }}</p>
+              </div>
+            </div>
+
+            <div class="lang-selector-list">
+              <button 
+                type="button" 
+                class="lang-btn neubrutal-box"
+                :class="{ active: language === 'id' }"
+                @click="setLanguage('id')"
+              >
+                <span class="flag-icon">🇮🇩</span>
+                <span class="lang-text">{{ t('langId') }}</span>
+                <Check v-if="language === 'id'" :size="16" :stroke-width="3" class="check-icon" />
+              </button>
+
+              <button 
+                type="button" 
+                class="lang-btn neubrutal-box"
+                :class="{ active: language === 'en' }"
+                @click="setLanguage('en')"
+              >
+                <span class="flag-icon">🇬🇧</span>
+                <span class="lang-text">{{ t('langEn') }}</span>
+                <Check v-if="language === 'en'" :size="16" :stroke-width="3" class="check-icon" />
+              </button>
             </div>
           </div>
 
-          <div class="lang-selector-list">
-            <button 
-              type="button" 
-              class="lang-btn neubrutal-box"
-              :class="{ active: language === 'id' }"
-              @click="setLanguage('id')"
-            >
-              <span class="flag-icon">🇮🇩</span>
-              <span class="lang-text">{{ t('langId') }}</span>
-              <Check v-if="language === 'id'" :size="16" strokeWidth="3" class="check-icon" />
-            </button>
+          <div class="setting-divider"></div>
 
-            <button 
-              type="button" 
-              class="lang-btn neubrutal-box"
-              :class="{ active: language === 'en' }"
-              @click="setLanguage('en')"
-            >
-              <span class="flag-icon">🇬🇧</span>
-              <span class="lang-text">{{ t('langEn') }}</span>
-              <Check v-if="language === 'en'" :size="16" strokeWidth="3" class="check-icon" />
-            </button>
-          </div>
-        </div>
+          <!-- Currency Setting Section -->
+          <div class="setting-section">
+            <div class="setting-item-header">
+              <div class="setting-info">
+                <h2 class="setting-label-title"><Coins :size="18" /> {{ t('currLabel') }}</h2>
+                <p class="setting-desc">{{ t('currDesc') }}</p>
+              </div>
+            </div>
 
-        <!-- Currency Setting Card -->
-        <div class="settings-card neubrutal-box bg-white">
-          <div class="setting-item-header">
-            <div class="setting-info">
-              <h2 class="setting-label-title"><Coins :size="18" /> {{ t('currLabel') }}</h2>
-              <p class="setting-desc">{{ t('currDesc') }}</p>
+            <div class="currency-grid">
+              <button 
+                v-for="curr in ['Rp', '$', 'S$', '€', '¥']" 
+                :key="curr"
+                type="button" 
+                class="currency-btn neubrutal-box"
+                :class="{ active: currency === curr }"
+                @click="setCurrency(curr)"
+              >
+                <span class="currency-symbol">{{ curr }}</span>
+              </button>
             </div>
           </div>
 
-          <div class="currency-grid">
-            <button 
-              v-for="curr in ['Rp', '$', 'S$', '€', '¥']" 
-              :key="curr"
-              type="button" 
-              class="currency-btn neubrutal-box"
-              :class="{ active: currency === curr }"
-              @click="setCurrency(curr)"
-            >
-              <span class="currency-symbol">{{ curr }}</span>
-            </button>
+          <div class="setting-divider"></div>
+
+          <!-- Save Button / Success Feedback (Inside the Card) -->
+          <div class="actions-wrapper">
+            <transition name="fade">
+              <div class="success-toast neubrutal-box" v-if="showSuccessMessage">
+                <Check :size="18" :stroke-width="3" />
+                <span>{{ t('saveSuccess') }}</span>
+              </div>
+            </transition>
+
+            <NeubrutalButton variant="primary" custom-class="save-settings-btn" @click="handleSave">
+              <Save :size="18" :stroke-width="3" /> {{ t('saveBtn') }}
+            </NeubrutalButton>
           </div>
-        </div>
-
-        <!-- Save Button / Success Feedback -->
-        <div class="actions-wrapper">
-          <transition name="fade">
-            <div class="success-toast neubrutal-box" v-if="showSuccessMessage">
-              <Check :size="18" strokeWidth="3" />
-              <span>{{ t('saveSuccess') }}</span>
-            </div>
-          </transition>
-
-          <button type="button" class="neubrutal-btn primary save-settings-btn" @click="handleSave">
-            <Save :size="18" strokeWidth="3" /> {{ t('saveBtn') }}
-          </button>
         </div>
 
       </section>
@@ -149,40 +156,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.app-header {
-  padding: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.back-btn {
-  width: 42px;
-  height: 42px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  color: #111;
-  text-decoration: none;
-  background: white;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-hard-sm);
-  border: 3px solid #111;
-}
-
-.back-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0px #111;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #111;
-  text-align: center;
-}
-
 .app-main {
   padding: 0 24px 100px;
 }
@@ -194,22 +167,38 @@ onMounted(() => {
 }
 
 .settings-card {
-  padding: 20px;
+  padding: 24px 20px;
   background: white;
   border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setting-divider {
+  height: 3px;
+  background: #111;
+  opacity: 0.15;
+  margin: 4px 0;
 }
 
 .setting-item-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
 }
 
 .setting-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  text-align: left;
 }
 
 .setting-label-title {
@@ -353,12 +342,13 @@ onMounted(() => {
   gap: 12px;
 }
 
-.save-settings-btn {
+:deep(.save-settings-btn) {
   background: var(--mint-green) !important;
   border: 3.5px solid #111 !important;
   box-shadow: 4px 4px 0px #111 !important;
   font-weight: 900 !important;
   font-size: 1.05rem !important;
+  width: 100%;
 }
 
 .success-toast {
