@@ -4,10 +4,12 @@ import { Settings, LogOut, Camera, PenTool, Sparkles, FileText, Pizza, Coffee, P
 import { useCekaSettings } from '~/composables/useCekaSettings'
 import { useCekaFriends } from '~/composables/useCekaFriends'
 import { useCekaHistory } from '~/composables/useCekaHistory'
+import { useCekaAuth } from '~/composables/useCekaAuth'
 
 const { currency, loadSettings, t, language, theme } = useCekaSettings()
 const { listFriendsOnly, loadFriends } = useCekaFriends()
 const { history, loadHistory } = useCekaHistory()
+const { user, logout } = useCekaAuth()
 
 const isDropdownOpen = ref(false)
 
@@ -59,7 +61,7 @@ const formatDate = (dateStr: string) => {
         <div class="dropdown-overlay" v-if="isDropdownOpen" @click="isDropdownOpen = false"></div>
         
         <div class="user-avatar neubrutal-box" @click="isDropdownOpen = !isDropdownOpen">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80" alt="User Avatar" class="avatar-img" />
+          <img :src="user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&h=100&q=80'" alt="User Avatar" class="avatar-img" />
         </div>
         
         <!-- Dropdown Menu -->
@@ -69,7 +71,7 @@ const formatDate = (dateStr: string) => {
             <span style="margin-left: 6px; font-weight: 850;">{{ t('settingsTitle') }}</span>
           </NuxtLink>
           <div class="dropdown-divider"></div>
-          <div class="dropdown-item text-red" @click="isDropdownOpen = false" style="display: flex; align-items: center;">
+          <div class="dropdown-item text-red" @click="logout" style="display: flex; align-items: center;">
             <LogOut :size="18" />
             <span style="margin-left: 6px; font-weight: 850;">{{ language === 'en' ? 'Logout' : 'Keluar' }}</span>
           </div>
@@ -118,8 +120,14 @@ const formatDate = (dateStr: string) => {
           <NuxtLink to="/app/friend" class="see-all">{{ t('viewAll') }}</NuxtLink>
         </div>
         
-        <div class="friends-scroll-container">
-          <!-- Friend items (Dynamic Data) -->
+        <div v-if="listFriendsOnly.length === 0" class="friends-empty neubrutal-box">
+          <NuxtLink to="/app/friend" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+            <Plus :size="16" :stroke-width="3" />
+            <span>{{ t('emptyFriends') }}</span>
+          </NuxtLink>
+        </div>
+
+        <div v-else class="friends-scroll-container">
           <div class="friend-item" v-for="friend in listFriendsOnly" :key="friend.id">
             <FriendAvatar :name="friend.name" :avatar-bg="friend.avatarBg" size="xl" />
             <span class="friend-name">{{ friend.name.split(' ')[0] }}</span>
@@ -404,6 +412,14 @@ const formatDate = (dateStr: string) => {
   color: #666;
   cursor: pointer;
   text-decoration: none;
+}
+
+.friends-empty {
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #666;
+  background: white;
 }
 
 .friends-scroll-container {

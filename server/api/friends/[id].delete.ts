@@ -1,0 +1,48 @@
+export default defineEventHandler(async (event) => {
+  const user = getUserFromEvent(event)
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized'
+    })
+  }
+
+  const id = event.context.params?.id
+  if (!id) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Friend ID is required'
+    })
+  }
+
+  try {
+    const db = getDb()
+
+    // Verify ownership of the friend record
+    const verifyStmt = db.prepare('SELECT user_id FROM friends WHERE id = ?')
+    const record = verifyStmt.get(id)
+    if (!record) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Friend not found'
+      })
+    }
+    if (record.user_id !== user.id) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Forbidden'
+      })
+    }
+
+    const deleteStmt = db.prepare('DELETE FROM friends WHERE id = ?')
+    deleteStmt.run(id)
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Failed to delete friend:', error)
+    throw createError({
+      statusCode: error.statusCode || 500,
+      statusMessage: error.statusMessage || 'Database error'
+    })
+  }
+})

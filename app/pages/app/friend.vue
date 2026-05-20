@@ -64,18 +64,18 @@ const closeAddEditModal = () => {
   showAddEditModal.value = false
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!friendForm.value.name.trim()) return
   
   if (isEditMode.value && currentFriendId.value !== null) {
-    updateFriend(
+    await updateFriend(
       currentFriendId.value,
       friendForm.value.name,
       friendForm.value.phone,
       friendForm.value.email
     )
   } else {
-    addFriend(
+    await addFriend(
       friendForm.value.name,
       friendForm.value.phone,
       friendForm.value.email
@@ -89,9 +89,9 @@ const triggerDelete = (id: string | number) => {
   showDeleteConfirmModal.value = true
 }
 
-const confirmDelete = () => {
+const confirmDelete = async () => {
   if (friendIdToDelete.value !== null) {
-    deleteFriend(friendIdToDelete.value)
+    await deleteFriend(friendIdToDelete.value)
     showDeleteConfirmModal.value = false
     friendIdToDelete.value = null
   }
