@@ -5,7 +5,7 @@ import { useCekaSettings } from '~/composables/useCekaSettings'
 import { useCekaFriends } from '~/composables/useCekaFriends'
 import { useCekaHistory } from '~/composables/useCekaHistory'
 
-const { currency, loadSettings, t, language } = useCekaSettings()
+const { currency, loadSettings, t, language, theme } = useCekaSettings()
 const { listFriendsOnly, loadFriends } = useCekaFriends()
 const { history, loadHistory } = useCekaHistory()
 
@@ -52,7 +52,9 @@ const formatDate = (dateStr: string) => {
 <template>
   <div class="neubrutal-container">
     <header class="app-header">
-      <h1 class="page-title">CekaCeka</h1>
+      <div class="logo-wrapper">
+        <img :src="theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'" alt="CekaCeka" class="app-logo" />
+      </div>
       <div class="user-profile-wrapper">
         <div class="dropdown-overlay" v-if="isDropdownOpen" @click="isDropdownOpen = false"></div>
         
@@ -166,10 +168,16 @@ const formatDate = (dateStr: string) => {
   align-items: center;
 }
 
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #111;
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.app-logo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .user-avatar {
