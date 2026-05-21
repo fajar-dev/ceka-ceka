@@ -20,17 +20,6 @@ const iconOptions = [
 onMounted(() => {
   loadSettings()
   loadHistory()
-
-  // Seed default history if empty
-  if (process.client && history.value.length === 0) {
-    const seed = [
-      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 120000, subtotalOtherFees: 0 },
-      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 250000, subtotalOtherFees: 0 },
-      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 85000, subtotalOtherFees: 0 }
-    ]
-    localStorage.setItem('ceka_history', JSON.stringify(seed))
-    loadHistory()
-  }
 })
 
 const getIconComponent = (type: string) => {
@@ -102,25 +91,38 @@ const filteredHistory = computed((): HistoryRecord[] => {
             :key="item.id" 
             class="history-card neubrutal-box"
             @click="useRouter().push(`/app/bill/${item.id}`)"
-            style="cursor: pointer;"
           >
-            <div class="history-icon" :class="item.iconBg">
-              <component :is="getIconComponent(item.iconType)" :size="24" />
+            <!-- Top Row: Icon + Title + Amount -->
+            <div class="card-top-row">
+              <div class="history-icon" :class="item.iconBg">
+                <component :is="getIconComponent(item.iconType)" :size="22" />
+              </div>
+              
+              <div class="card-title-wrapper">
+                <h3 class="history-title">{{ item.title }}</h3>
+                <div class="history-meta-row">
+                  <span class="meta-chip"><Calendar :size="10" :stroke-width="2.5" /> {{ formatDate(item.date) }}</span>
+                  <span class="meta-chip"><Users :size="10" :stroke-width="2.5" /> {{ item.peopleCount }}</span>
+                </div>
+              </div>
+
+              <div class="card-amount-wrapper">
+                <span class="history-amount">{{ formatCurrency(item.amount) }}</span>
+              </div>
             </div>
-            
-            <div class="history-details">
-              <h3 class="history-title">{{ item.title }}</h3>
-              <p class="history-meta">
-                <span class="meta-item"><Calendar :size="11" :stroke-width="2.5" /> {{ formatDate(item.date) }}</span>
-                <span class="meta-item"><Users :size="11" :stroke-width="2.5" /> {{ item.peopleCount }} {{ t('friendLabel') }}</span>
-                <span v-if="item.stats" class="meta-item progress-meta" :class="{ lunas: item.stats.progressPercent === 100 }">
-                  • {{ item.stats.progressPercent }}% Lunas
-                </span>
-              </p>
-            </div>
-            
-            <div class="history-right-wrapper">
-              <div class="history-amount">{{ formatCurrency(item.amount) }}</div>
+
+            <!-- Bottom Row: Progress Bar -->
+            <div class="card-progress-row" v-if="item.stats">
+              <div class="progress-track">
+                <div 
+                  class="progress-fill" 
+                  :class="{ complete: item.stats.progressPercent === 100 }"
+                  :style="{ width: item.stats.progressPercent + '%' }"
+                ></div>
+              </div>
+              <span class="progress-label" :class="{ complete: item.stats.progressPercent === 100 }">
+                {{ item.stats.progressPercent === 100 ? '✓ Lunas' : `${item.stats.paidCount}/${item.stats.totalCount} paid` }}
+              </span>
             </div>
           </div>
         </div>
@@ -205,33 +207,47 @@ const filteredHistory = computed((): HistoryRecord[] => {
   color: var(--text-color-muted);
 }
 
+/* Redesigned Card */
 .history-card {
-  padding: 14px;
+  padding: 16px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 14px;
   background: var(--box-bg);
-  transition: transform 0.2s;
-  cursor: default;
+  cursor: pointer;
   text-align: left;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s;
+}
+
+.history-card:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px #111 !important;
+}
+
+/* Top Row */
+.card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .history-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  border: 2px solid #111;
+  border: 2.5px solid #111;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
+  box-shadow: 1.5px 1.5px 0px #111;
 }
 
 .icon-bg-0 { background: var(--pastel-blue); }
 .icon-bg-1 { background: var(--peach); }
 .icon-bg-2 { background: var(--soft-yellow); }
 
-.history-details {
+.card-title-wrapper {
   flex: 1;
   overflow: hidden;
   display: flex;
@@ -241,49 +257,93 @@ const filteredHistory = computed((): HistoryRecord[] => {
 
 .history-title {
   font-size: 0.95rem;
-  font-weight: 750;
+  font-weight: 800;
   color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.history-meta {
+.history-meta-row {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: 8px;
+  align-items: center;
 }
 
-.meta-item {
-  font-size: 0.7rem;
-  font-weight: 600;
+.meta-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
   color: var(--text-color-muted);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
-.history-right-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
+.card-amount-wrapper {
   flex-shrink: 0;
+  text-align: right;
 }
 
 .history-amount {
-  font-weight: 800;
+  font-weight: 900;
   font-size: 0.95rem;
   color: var(--text-color);
 }
 
-.progress-meta {
-  font-weight: 800;
-  color: #D97706;
+/* Progress Row */
+.card-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.progress-meta.lunas {
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: var(--box-bg-alt, #E5E7EB);
+  border-radius: 99px;
+  border: 2px solid #111;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #F59E0B;
+  border-radius: 99px;
+  transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  min-width: 0;
+}
+
+.progress-fill.complete {
+  background: #10B981;
+}
+
+.progress-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #D97706;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: right;
+}
+
+.progress-label.complete {
   color: #059669;
 }
+
+/* Dark mode */
+:global(.dark-theme) .progress-track {
+  background: var(--box-bg-alt) !important;
+  border-color: var(--border-color) !important;
+}
+
+:global(.dark-theme) .history-icon {
+  border-color: var(--border-color) !important;
+  box-shadow: 1.5px 1.5px 0px var(--border-color) !important;
+}
+
+:global(.dark-theme) .history-card:active {
+  box-shadow: 2px 2px 0px var(--border-color) !important;
+}
 </style>
+

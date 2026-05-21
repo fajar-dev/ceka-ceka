@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Calendar, ShoppingBag, Coins, CreditCard, Check, Share2, Trash2, Users, ChevronDown, ChevronUp } from '@lucide/vue'
+import { Calendar, ShoppingBag, Coins, CreditCard, Check, Share2, Trash2, Users, ChevronDown, ChevronUp, Download, Link, RefreshCw, Copy } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
 import { useCekaFriends } from '~/composables/useCekaFriends'
+import { useCekaAuth } from '~/composables/useCekaAuth'
 
 const { currency, t, language, loadSettings } = useCekaSettings()
 const { getFriendDetails } = useCekaFriends()
+const { user } = useCekaAuth()
 
 const route = useRoute()
 const router = useRouter()
@@ -15,6 +17,11 @@ const payments = ref<any[]>([])
 const stats = ref<any>({ totalCount: 0, paidCount: 0, progressPercent: 0 })
 const isLoading = ref<boolean>(true)
 const showDeleteConfirm = ref<boolean>(false)
+const showShareModal = ref<boolean>(false)
+const shareEnabled = ref<boolean>(false)
+const shareCode = ref<string | null>(null)
+const isTogglingShare = ref(false)
+const isResettingCode = ref(false)
 
 const expandedFriends = ref<Record<string, boolean>>({})
 const toggleExpandFriend = (id: string | number) => {
@@ -261,11 +268,171 @@ const copySharingMessage = () => {
   navigator.clipboard.writeText(msg)
   triggerToast(language.value === 'en' ? 'Share details copied!' : 'Pesan bagi-bagi berhasil disalin!', 'success')
 }
+
+// Share link functions
+const getShareUrl = () => {
+  if (!shareCode.value) return ''
+  const origin = process.client ? window.location.origin : ''
+  return `${origin}/share/${shareCode.value}`
+}
+
+const openShareModal = () => {
+  shareEnabled.value = !!bill.value?.shareCode
+  shareCode.value = bill.value?.shareCode || null
+  showShareModal.value = true
+}
+
+const toggleShare = async () => {
+  if (isTogglingShare.value) return
+  isTogglingShare.value = true
+  try {
+    const newState = !shareEnabled.value
+    const data = await $fetch<{ shareCode: string | null }>('/api/bills/share', {
+      method: 'POST',
+      body: { billId: billId.value, enabled: newState }
+    })
+    shareEnabled.value = newState
+    shareCode.value = data.shareCode
+    if (bill.value) bill.value.shareCode = data.shareCode
+    triggerToast(
+      newState
+        ? (language.value === 'en' ? 'Sharing enabled!' : 'Link aktif!')
+        : (language.value === 'en' ? 'Sharing disabled' : 'Link dinonaktifkan'),
+      'success'
+    )
+  } catch (e) {
+    console.error('Toggle share failed:', e)
+    triggerToast(language.value === 'en' ? 'Failed to toggle sharing' : 'Gagal mengubah sharing', 'error')
+  } finally {
+    isTogglingShare.value = false
+  }
+}
+
+const resetShareCode = async () => {
+  if (isResettingCode.value) return
+  isResettingCode.value = true
+  try {
+    const data = await $fetch<{ shareCode: string }>('/api/bills/reset-share', {
+      method: 'POST',
+      body: { billId: billId.value }
+    })
+    shareCode.value = data.shareCode
+    if (bill.value) bill.value.shareCode = data.shareCode
+    triggerToast(language.value === 'en' ? 'Link reset!' : 'Link telah direset!', 'success')
+  } catch (e) {
+    console.error('Reset share code failed:', e)
+    triggerToast(language.value === 'en' ? 'Failed to reset link' : 'Gagal mereset link', 'error')
+  } finally {
+    isResettingCode.value = false
+  }
+}
+
+const copyShareLink = () => {
+  const url = getShareUrl()
+  if (url) {
+    navigator.clipboard.writeText(url)
+    triggerToast(language.value === 'en' ? 'Link copied!' : 'Link disalin!', 'success')
+  }
+}
+
+// Download bill as PNG
+const detailContentRef = ref<HTMLElement | null>(null)
+const isDownloading = ref(false)
+
+const downloadBillAsPng = async () => {
+  if (!detailContentRef.value || isDownloading.value) return
+  isDownloading.value = true
+
+  try {
+    const html2canvas = (await import('html2canvas-pro')).default
+
+    // Detect dark mode
+    const isDark = document.documentElement.classList.contains('dark-theme')
+    const bgColor = isDark ? '#121214' : '#F8F6F2'
+    const textColor = isDark ? '#E5E7EB' : '#111111'
+
+    // Create a styled wrapper for better PNG output
+    const wrapper = document.createElement('div')
+    wrapper.style.cssText = `
+      position: fixed;
+      top: -99999px;
+      left: -99999px;
+      width: ${detailContentRef.value.offsetWidth + 48}px;
+      padding: 24px;
+      background: ${bgColor};
+      border-radius: 0;
+      z-index: -1;
+    `
+
+    // Clone the content
+    const clone = detailContentRef.value.cloneNode(true) as HTMLElement
+    clone.style.margin = '0'
+    clone.style.padding = '0'
+
+    // Replace "Kamu" with the actual user name in the clone
+    const userName = user.value?.name || 'Kamu'
+    if (userName !== 'Kamu') {
+      const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT)
+      let node: Text | null
+      while ((node = walker.nextNode() as Text | null)) {
+        if (node.textContent && node.textContent.trim() === 'Kamu') {
+          node.textContent = node.textContent.replace('Kamu', userName)
+        }
+      }
+    }
+
+    wrapper.appendChild(clone)
+
+    // Add watermark footer
+    const watermark = document.createElement('div')
+    watermark.style.cssText = `
+      text-align: center;
+      padding: 16px 0 4px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: ${isDark ? '#555' : '#aaa'};
+      letter-spacing: 1px;
+    `
+    watermark.textContent = 'CekaCeka • Split Bill App'
+    wrapper.appendChild(watermark)
+
+    document.body.appendChild(wrapper)
+
+    // Wait for styles to apply
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: bgColor,
+      scale: 2,
+      useCORS: true,
+      logging: false
+    })
+
+    // Clean up
+    document.body.removeChild(wrapper)
+
+    const link = document.createElement('a')
+    const fileName = bill.value?.title
+      ? `${bill.value.title.replace(/[^a-zA-Z0-9]/g, '_')}.png`
+      : 'bill.png'
+    link.download = fileName
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+
+    triggerToast(language.value === 'en' ? 'Bill downloaded!' : 'Tagihan berhasil diunduh!', 'success')
+  } catch (e) {
+    console.error('Failed to download bill:', e)
+    triggerToast(language.value === 'en' ? 'Download failed' : 'Gagal mengunduh', 'error')
+  } finally {
+    isDownloading.value = false
+  }
+}
 </script>
 
 <template>
   <div class="neubrutal-container">
-    <AppHeader :title="t('detailBillTitle')" @back="router.push('/app')">
+    <AppHeader :title="t('detailBillTitle')" @back="router.back()">
       <template #actions>
         <button class="delete-btn-action neubrutal-box" @click="showDeleteConfirm = true" title="Hapus Tagihan">
           <Trash2 :size="18" :stroke-width="3" />
@@ -274,7 +441,7 @@ const copySharingMessage = () => {
     </AppHeader>
 
     <main class="app-main" v-if="!isLoading && bill">
-      <section class="detail-content">
+      <section class="detail-content" ref="detailContentRef">
         
         <!-- Summary Header Card -->
         <div class="bill-summary-card neubrutal-box bg-white">
@@ -352,7 +519,7 @@ const copySharingMessage = () => {
           <div 
             v-for="payment in payments" 
             :key="payment.id" 
-            class="share-row-card neubrutal-box bg-white"
+            class="share-row-card neubrutal-box"
             :class="{ expanded: expandedFriends[payment.id], paid: payment.isPaid }"
           >
             <!-- Share Main Row -->
@@ -433,10 +600,10 @@ const copySharingMessage = () => {
 
     <!-- Sticky Share/Back Actions Footer -->
     <section class="footer-actions-bar neubrutal-box" v-if="!isLoading && bill">
-      <NeubrutalButton variant="ghost" custom-class="flex-1 return-btn" @click="router.push('/app')">
-        {{ t('homeBtnLabel') }}
+      <NeubrutalButton variant="ghost" custom-class="flex-1 return-btn" @click="downloadBillAsPng" :disabled="isDownloading">
+        <Download :size="18" :stroke-width="3" /> {{ isDownloading ? '...' : (language === 'en' ? 'Download' : 'Unduh') }}
       </NeubrutalButton>
-      <NeubrutalButton variant="primary" custom-class="flex-1 save-btn-final share-gradient" @click="copySharingMessage">
+      <NeubrutalButton variant="primary" custom-class="flex-1 save-btn-final share-gradient" @click="openShareModal">
         <Share2 :size="18" :stroke-width="3" /> {{ t('shareSplitBtn') }}
       </NeubrutalButton>
     </section>
@@ -460,6 +627,49 @@ const copySharingMessage = () => {
           <NeubrutalButton variant="danger" custom-class="flex-1 confirm-btn-yes delete-btn-final" @click="handleDeleteBill">
             {{ t('deleteBtn') }}
           </NeubrutalButton>
+        </div>
+      </div>
+    </NeubrutalModal>
+
+    <!-- Share Modal -->
+    <NeubrutalModal :show="showShareModal" accent="primary" @close="showShareModal = false">
+      <div class="share-modal-body">
+        <div class="share-modal-icon neubrutal-box">
+          <Link :size="28" :stroke-width="2.5" />
+        </div>
+        
+        <h2 class="confirm-title">{{ language === 'en' ? 'Share Bill' : 'Bagikan Tagihan' }}</h2>
+        <p class="confirm-text">
+          {{ language === 'en' ? 'Anyone with the link can view this bill' : 'Siapa saja dengan link bisa melihat tagihan ini' }}
+        </p>
+
+        <!-- Toggle Switch -->
+        <div class="share-toggle-row">
+          <span class="share-toggle-label">{{ language === 'en' ? 'Enable sharing' : 'Aktifkan sharing' }}</span>
+          <button 
+            class="neubrutal-toggle" 
+            :class="{ active: shareEnabled }" 
+            @click="toggleShare" 
+            :disabled="isTogglingShare"
+          >
+            <div class="toggle-knob"></div>
+          </button>
+        </div>
+
+        <!-- Share Link Section -->
+        <div class="share-link-section" v-if="shareEnabled && shareCode">
+          <div class="share-link-box neubrutal-box">
+            <span class="share-link-text">{{ getShareUrl() }}</span>
+          </div>
+          
+          <div class="share-link-actions">
+            <NeubrutalButton variant="primary" custom-class="flex-1" @click="copyShareLink">
+              <Copy :size="16" :stroke-width="3" /> {{ language === 'en' ? 'Copy Link' : 'Salin Link' }}
+            </NeubrutalButton>
+            <NeubrutalButton variant="ghost" custom-class="reset-link-btn" @click="resetShareCode" :disabled="isResettingCode">
+              <RefreshCw :size="16" :stroke-width="3" :class="{ spinning: isResettingCode }" />
+            </NeubrutalButton>
+          </div>
         </div>
       </div>
     </NeubrutalModal>
@@ -672,9 +882,9 @@ const copySharingMessage = () => {
 }
 
 .share-row-card.paid {
-  background: #ECFDF5 !important;
-  border-color: #111;
-  box-shadow: 2px 2px 0px #111 !important;
+  background-color: #F0FDF4;
+  border-color: #16A34A;
+  box-shadow: 2px 2px 0px #16A34A !important;
 }
 
 .share-row-card.expanded {
@@ -818,13 +1028,14 @@ const copySharingMessage = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .checkbox-box {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border: 2.5px solid #111;
-  border-radius: 6px;
+  border-radius: 7px;
   background: var(--box-bg);
   display: flex;
   align-items: center;
@@ -833,13 +1044,19 @@ const copySharingMessage = () => {
   transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.2);
 }
 
+.checkbox-box:hover {
+  transform: scale(1.08);
+}
+
 .checkbox-box.checked {
-  background: var(--mint-green);
+  background: #059669;
+  border-color: #059669;
+  box-shadow: 1.5px 1.5px 0px #047857;
   transform: scale(1.05);
 }
 
 .check-icon-svg {
-  color: #111;
+  color: #fff;
 }
 
 /* Footer Actions */
@@ -967,9 +1184,9 @@ const copySharingMessage = () => {
 /* Toast */
 .neubrutal-toast {
   position: fixed;
-  bottom: 110px;
+  top: 24px;
   left: 50%;
-  transform: translate(-50%, 50px);
+  transform: translate(-50%, -50px);
   width: calc(100% - 48px);
   max-width: 360px;
   background: var(--box-bg);
@@ -1017,7 +1234,7 @@ const copySharingMessage = () => {
 .toast-text-msg {
   font-size: 0.85rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
   text-align: left;
 }
 
@@ -1050,8 +1267,41 @@ const copySharingMessage = () => {
 }
 
 :global(.dark-theme) .share-row-card.paid {
-  background-color: #052e16 !important;
+  background: #1a2e1a !important;
+  border-color: #16A34A !important;
+  box-shadow: 2px 2px 0px #16A34A !important;
 }
+
+:global(.dark-theme) .share-row-card.paid .share-name {
+  color: var(--text-color) !important;
+}
+
+:global(.dark-theme) .share-row-card.paid .share-total-amount {
+  color: var(--text-color) !important;
+}
+
+:global(.dark-theme) .share-row-card.paid .share-name.strike {
+  color: #6B7280 !important;
+}
+
+:global(.dark-theme) .share-row-card.paid .share-total-amount.strike {
+  color: #6B7280 !important;
+}
+
+:global(.dark-theme) .share-row-card.paid .share-items-count {
+  color: #9CA3AF !important;
+}
+
+:global(.dark-theme) .share-row-card.paid .drawer-item-name,
+:global(.dark-theme) .share-row-card.paid .drawer-item-cost,
+:global(.dark-theme) .share-row-card.paid .drawer-item-portion {
+  color: #D1D5DB !important;
+}
+
+:global(.dark-theme) .share-row-card.paid .drawer-divider {
+  border-bottom-color: #374151 !important;
+}
+
 
 :global(.dark-theme) .expand-arrow-btn {
   color: var(--text-color) !important;
@@ -1059,10 +1309,18 @@ const copySharingMessage = () => {
 
 :global(.dark-theme) .checkbox-box {
   background-color: var(--box-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 1.5px 1.5px 0px var(--border-color) !important;
 }
 
 :global(.dark-theme) .checkbox-box.checked {
-  background-color: var(--mint-green) !important;
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+  box-shadow: 1.5px 1.5px 0px #047857 !important;
+}
+
+:global(.dark-theme) .drawer-divider {
+  border-bottom-color: var(--border-color) !important;
 }
 
 :global(.dark-theme) .neubrutal-progress-track {
@@ -1071,14 +1329,24 @@ const copySharingMessage = () => {
 
 :global(.dark-theme) .neubrutal-toast {
   background-color: var(--box-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 4px 4px 0px var(--border-color) !important;
 }
 
 :global(.dark-theme) .neubrutal-toast.error {
   background-color: #450a0a !important;
 }
 
+:global(.dark-theme) .neubrutal-toast.error .toast-text-msg {
+  color: #FCA5A5 !important;
+}
+
 :global(.dark-theme) .toast-text-msg {
   color: var(--text-color) !important;
+}
+
+:global(.dark-theme) .toast-status-bullet {
+  border-color: var(--border-color) !important;
 }
 
 :global(.dark-theme) .skeleton-card {

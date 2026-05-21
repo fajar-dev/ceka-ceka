@@ -13,21 +13,25 @@ const { user, logout } = useCekaAuth()
 
 const isDropdownOpen = ref(false)
 
+// Summary data
+const unpaidAmount = ref(0)
+const unpaidBillCount = ref(0)
+
+const loadSummary = async () => {
+  try {
+    const data = await $fetch<{ unpaidAmount: number; unpaidBillCount: number }>('/api/bills/summary')
+    unpaidAmount.value = data.unpaidAmount
+    unpaidBillCount.value = data.unpaidBillCount
+  } catch (e) {
+    console.error('Failed to load summary:', e)
+  }
+}
+
 onMounted(() => {
   loadSettings()
   loadFriends()
   loadHistory()
-
-  // Seed default history if empty
-  if (process.client && history.value.length === 0) {
-    const seed = [
-      { id: 1, title: 'Makan Siang Kopitiam', date: '2026-05-12', peopleCount: 3, amount: 120000, iconType: 'file', iconBg: 'icon-bg-0', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 120000, subtotalOtherFees: 0 },
-      { id: 2, title: 'Pesen Pizza Malam', date: '2026-05-10', peopleCount: 5, amount: 250000, iconType: 'pizza', iconBg: 'icon-bg-1', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 250000, subtotalOtherFees: 0 },
-      { id: 3, title: 'Nongkrong Cafe', date: '2026-05-08', peopleCount: 2, amount: 85000, iconType: 'coffee', iconBg: 'icon-bg-2', items: [], invitedFriends: [], taxType: 'percent' as const, taxPercent: 0, taxManual: 0, taxAmount: 0, discountType: 'percent' as const, discountPercent: 0, discountManual: 0, discountAmount: 0, otherFees: [], subtotalItems: 85000, subtotalOtherFees: 0 }
-    ]
-    localStorage.setItem('ceka_history', JSON.stringify(seed))
-    loadHistory()
-  }
+  loadSummary()
 })
 
 const getIconComponent = (type: string) => {
@@ -87,8 +91,8 @@ const formatDate = (dateStr: string) => {
         <div class="summary-card neubrutal-box bg-mint">
           <div class="summary-content">
             <p class="summary-label">{{ t('unpaidBill') }}</p>
-            <h2 class="summary-amount">Rp 450.000</h2>
-            <div class="summary-badge">2 {{ t('waitingPayment') }}</div>
+            <h2 class="summary-amount">{{ formatCurrency(unpaidAmount) }}</h2>
+            <div class="summary-badge">{{ unpaidBillCount }} {{ t('waitingPayment') }}</div>
           </div>
           <div class="summary-illustration">
             <div class="mini-receipt">

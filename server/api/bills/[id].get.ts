@@ -53,6 +53,7 @@ export default defineEventHandler(async (event) => {
         amount: bill.amount,
         iconType: bill.icon_type,
         iconBg: bill.icon_bg,
+        shareCode: bill.share_code || null,
         createdAt: bill.created_at,
         rawData: parsedRawData
       },

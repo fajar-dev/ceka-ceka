@@ -55,6 +55,7 @@ export const getDb = () => {
         icon_type TEXT,
         icon_bg TEXT,
         raw_data TEXT NOT NULL,
+        share_code TEXT UNIQUE,
         created_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )

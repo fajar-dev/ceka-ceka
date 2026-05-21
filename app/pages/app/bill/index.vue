@@ -1028,7 +1028,7 @@ const goToPreviewSplit = () => {
           <NeubrutalButton variant="ghost" custom-class="flex-1 confirm-btn-cancel" @click="showCancelConfirmModal = false">
             {{ t('goBack') }}
           </NeubrutalButton>
-          <NeubrutalButton variant="danger" custom-class="flex-1 save-btn-final" @click="handleCancelConfirm">
+          <NeubrutalButton variant="danger" custom-class="flex-1 confirm-btn-yes save-btn-final" @click="handleCancelConfirm">
             {{ t('yesCancel') }}
           </NeubrutalButton>
         </div>
