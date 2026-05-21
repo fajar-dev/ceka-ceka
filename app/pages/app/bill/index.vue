@@ -1028,7 +1028,7 @@ const goToPreviewSplit = () => {
           <NeubrutalButton variant="ghost" custom-class="flex-1 confirm-btn-cancel" @click="showCancelConfirmModal = false">
             {{ t('goBack') }}
           </NeubrutalButton>
-          <NeubrutalButton variant="danger" custom-class="flex-1 confirm-btn-yes save-btn-final" @click="handleCancelConfirm">
+          <NeubrutalButton variant="danger" custom-class="flex-1 save-btn-final" @click="handleCancelConfirm">
             {{ t('yesCancel') }}
           </NeubrutalButton>
         </div>
@@ -1052,9 +1052,9 @@ const goToPreviewSplit = () => {
   justify-content: center;
   align-items: center;
   border-radius: 12px;
-  color: #111;
+  color: var(--text-color);
   text-decoration: none;
-  background: white;
+  background: var(--box-bg);
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: var(--shadow-hard-sm);
   border: 3px solid #111;
@@ -1068,7 +1068,7 @@ const goToPreviewSplit = () => {
 .page-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
   text-align: center;
 }
 
@@ -1084,7 +1084,7 @@ const goToPreviewSplit = () => {
 
 .form-section-card {
   padding: 18px;
-  background: white;
+  background: var(--box-bg);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1093,7 +1093,7 @@ const goToPreviewSplit = () => {
 .section-title-nested {
   font-size: 1.1rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1120,7 +1120,7 @@ const goToPreviewSplit = () => {
 .form-label {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
 }
 
 .required {
@@ -1137,7 +1137,7 @@ const goToPreviewSplit = () => {
   font-size: 0.95rem;
   box-shadow: var(--shadow-hard-sm);
   outline: none;
-  background: white;
+  background: var(--box-bg);
 }
 
 .neubrutal-input.small {
@@ -1160,7 +1160,7 @@ const goToPreviewSplit = () => {
   font-size: 0.95rem;
   box-shadow: var(--shadow-hard-sm);
   outline: none;
-  background: white;
+  background: var(--box-bg);
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
@@ -1174,11 +1174,11 @@ const goToPreviewSplit = () => {
   padding: 16px;
   text-align: center;
   font-weight: 700;
-  color: #777;
+  color: var(--text-color-muted);
   font-size: 0.8rem;
-  border: 2px dashed #ccc;
+  border: 2px dashed var(--text-color-muted);
   border-radius: var(--radius-md);
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
 }
 
 .chips-container {
@@ -1192,7 +1192,7 @@ const goToPreviewSplit = () => {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: white;
+  background: var(--box-bg);
   border-radius: var(--radius-lg);
   border: 2px solid #111;
   box-shadow: 2px 2px 0px #111;
@@ -1218,7 +1218,7 @@ const goToPreviewSplit = () => {
 .chip-name {
   font-size: 0.8rem;
   font-weight: 750;
-  color: #111;
+  color: var(--text-color);
 }
 
 .remove-chip-btn {
@@ -1252,7 +1252,7 @@ const goToPreviewSplit = () => {
 .portions-assignment-summary {
   margin-top: 14px;
   padding: 10px 12px;
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
   border: 3px solid #111;
   box-shadow: 3px 3px 0px #111;
   border-radius: 8px;
@@ -1270,7 +1270,7 @@ const goToPreviewSplit = () => {
 .assignment-summary-title {
   font-size: 0.75rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1306,7 +1306,7 @@ const goToPreviewSplit = () => {
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: white;
+  background: var(--box-bg);
   border-radius: var(--radius-md);
   border: 2px solid #111;
   box-shadow: 1.5px 1.5px 0px #111;
@@ -1327,7 +1327,7 @@ const goToPreviewSplit = () => {
 .chip-name-mini {
   font-size: 0.7rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
 }
 
 .chip-portion-badge {
@@ -1392,7 +1392,7 @@ const goToPreviewSplit = () => {
   box-shadow: 8px 8px 0px #111 !important;
   border-radius: 24px !important;
   padding: 28px 20px 20px !important;
-  background: white;
+  background: var(--box-bg);
   width: 100%;
   max-width: 420px;
   animation: pop-modal 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1434,19 +1434,19 @@ const goToPreviewSplit = () => {
 .modal-title {
   font-size: 1.3rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .title-icon {
-  color: #111;
+  color: var(--text-color);
 }
 
 .modal-subtitle {
   font-size: 0.75rem;
-  color: #555;
+  color: var(--text-color-muted);
   font-weight: 700;
 }
 
@@ -1462,7 +1462,7 @@ const goToPreviewSplit = () => {
   background: none;
   border: none;
   cursor: pointer;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1488,7 +1488,7 @@ const goToPreviewSplit = () => {
   justify-content: space-between;
   align-items: center;
   padding: 6px 12px;
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
   border: 2.5px solid #111;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -1496,11 +1496,11 @@ const goToPreviewSplit = () => {
 }
 
 .summary-info-pill .label {
-  color: #666;
+  color: var(--text-color-muted);
 }
 
 .summary-info-pill .val {
-  color: #111;
+  color: var(--text-color);
   font-weight: 900;
 }
 
@@ -1535,9 +1535,9 @@ const goToPreviewSplit = () => {
   text-align: center;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #777;
-  background: #FCFAF6;
-  border: 2px dashed #ccc;
+  color: var(--text-color-muted);
+  background: var(--box-bg-alt);
+  border: 2px dashed var(--text-color-muted);
   border-radius: 6px;
 }
 
@@ -1559,7 +1559,7 @@ const goToPreviewSplit = () => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background: white;
+  background: var(--box-bg);
   border: 2.5px solid #111;
   border-radius: 12px;
   box-shadow: 2.5px 2.5px 0px #111;
@@ -1594,7 +1594,7 @@ const goToPreviewSplit = () => {
   height: 22px;
   border: 2.5px solid #111;
   border-radius: 6px;
-  background: white;
+  background: var(--box-bg);
   transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;
@@ -1633,7 +1633,7 @@ const goToPreviewSplit = () => {
 .assignment-name-new {
   font-size: 0.85rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
 }
 
 /* Portion counter capsule design inside modal */
@@ -1658,7 +1658,7 @@ const goToPreviewSplit = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
+  background: var(--box-bg);
   border: 1.5px solid #111;
   transition: transform 0.05s;
 }
@@ -1685,7 +1685,7 @@ const goToPreviewSplit = () => {
   font-weight: 900;
   font-size: 0.8rem;
   font-family: 'Inter', sans-serif;
-  color: #111;
+  color: var(--text-color);
   outline: none;
 }
 
@@ -1782,7 +1782,8 @@ const goToPreviewSplit = () => {
   border: 2.5px solid #111 !important;
   border-radius: 12px !important;
   box-shadow: 2px 2px 0px #111 !important;
-  background: #F9FAFB !important;
+  background: var(--box-bg-alt) !important;
+  color: var(--text-color) !important;
 }
 
 .search-and-add-wrapper {
@@ -1844,7 +1845,7 @@ const goToPreviewSplit = () => {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background: white;
+  background: var(--box-bg);
   border: 2.5px solid #111;
   border-radius: 12px;
   box-shadow: 2.5px 2.5px 0px #111;
@@ -1875,7 +1876,7 @@ const goToPreviewSplit = () => {
 .invite-name-new {
   font-size: 0.85rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
 }
 
 /* Items Nesting & Headers */
@@ -1901,7 +1902,7 @@ const goToPreviewSplit = () => {
 }
 
 .item-row-card {
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -2013,7 +2014,7 @@ const goToPreviewSplit = () => {
 
 .tax-control-group {
   padding: 14px;
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
   border: 3px solid #111;
   border-radius: 12px;
   box-shadow: 3px 3px 0px #111;
@@ -2033,7 +2034,7 @@ const goToPreviewSplit = () => {
 .tax-title {
   font-size: 0.85rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
 }
 
 .tax-toggle-tabs {
@@ -2058,9 +2059,9 @@ const goToPreviewSplit = () => {
 }
 
 .tab-btn.active {
-  background: white;
+  background: var(--box-bg);
   border: 1.5px solid #111;
-  color: #111;
+  color: var(--text-color);
   box-shadow: 1px 1px 0px #111;
   font-weight: 850;
 }
@@ -2077,7 +2078,7 @@ const goToPreviewSplit = () => {
   right: 12px;
   font-weight: 900;
   font-size: 0.85rem;
-  color: #111;
+  color: var(--text-color);
 }
 
 .prefix-label {
@@ -2085,7 +2086,7 @@ const goToPreviewSplit = () => {
   left: 12px;
   font-weight: 900;
   font-size: 0.85rem;
-  color: #111;
+  color: var(--text-color);
 }
 
 .input-suffix-wrapper input {
@@ -2100,7 +2101,7 @@ const goToPreviewSplit = () => {
   display: flex;
   flex-direction: column;
   padding: 6px 12px;
-  background: white;
+  background: var(--box-bg);
   border: 2.5px solid #111;
   border-radius: 10px;
   box-shadow: 2px 2px 0px #111;
@@ -2115,13 +2116,13 @@ const goToPreviewSplit = () => {
 .preview-label {
   font-size: 0.65rem;
   font-weight: 800;
-  color: #666;
+  color: var(--text-color-muted);
 }
 
 .preview-value {
   font-size: 0.8rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
 }
 
 /* Other Fees dynamic nested list */
@@ -2141,7 +2142,7 @@ const goToPreviewSplit = () => {
 .fees-subtitle {
   font-size: 0.85rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -2166,11 +2167,11 @@ const goToPreviewSplit = () => {
   padding: 12px;
   text-align: center;
   font-weight: 750;
-  color: #777;
+  color: var(--text-color-muted);
   font-size: 0.75rem;
-  border: 2px dashed #ccc;
+  border: 2px dashed var(--text-color-muted);
   border-radius: 8px;
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
 }
 
 .fees-nested-list {
@@ -2180,7 +2181,7 @@ const goToPreviewSplit = () => {
 }
 
 .fee-row-card {
-  background: #FCFAF6;
+  background: var(--box-bg-alt);
   padding: 8px 12px;
   border: 2.5px solid #111;
   border-radius: 10px;
@@ -2300,13 +2301,13 @@ const goToPreviewSplit = () => {
 .confirm-title {
   font-size: 1.25rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
   margin-bottom: 10px;
 }
 
 .confirm-text {
   font-size: 0.85rem;
-  color: #4B5563;
+  color: var(--text-color-muted);
   line-height: 1.5;
   font-weight: 650;
   margin-bottom: 24px;
@@ -2375,5 +2376,12 @@ const goToPreviewSplit = () => {
     padding: 10px 8px !important;
     font-size: 0.85rem !important;
   }
+}
+
+:global(.dark-theme) .assignment-friend-row-new.active {
+  background-color: #052e16 !important;
+}
+:global(.dark-theme) .invite-friend-row-new.selected {
+  background-color: #78350f !important;
 }
 </style>

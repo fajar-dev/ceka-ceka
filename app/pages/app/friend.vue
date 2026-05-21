@@ -308,13 +308,13 @@ const confirmDelete = async () => {
   font-size: 0.95rem;
   box-shadow: var(--shadow-hard-sm);
   outline: none;
-  background: white;
+  background: var(--box-bg);
   transition: background-color 0.2s;
   box-sizing: border-box;
 }
 
 .neubrutal-input:focus {
-  background-color: #FAF8F5;
+  background-color: var(--box-bg-alt);
 }
 
 /* Modal Headers & Subtitles */
@@ -336,19 +336,19 @@ const confirmDelete = async () => {
 .modal-title {
   font-size: 1.3rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .title-icon {
-  color: #111;
+  color: var(--text-color);
 }
 
 .modal-subtitle {
   font-size: 0.8rem;
-  color: #6B7280;
+  color: var(--text-color-muted);
   font-weight: 600;
 }
 
@@ -356,7 +356,7 @@ const confirmDelete = async () => {
   background: none;
   border: none;
   cursor: pointer;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -385,7 +385,7 @@ const confirmDelete = async () => {
 .form-label {
   font-size: 0.875rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
 }
 
 .required {
@@ -418,7 +418,7 @@ const confirmDelete = async () => {
 .section-title {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
 }
 
 .friends-list {
@@ -431,7 +431,7 @@ const confirmDelete = async () => {
   padding: 24px;
   text-align: center;
   font-weight: 700;
-  color: #666;
+  color: var(--text-color-muted);
 }
 
 .friend-card {
@@ -439,7 +439,7 @@ const confirmDelete = async () => {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: white;
+  background: var(--box-bg);
   min-height: 74px;
 }
 
@@ -456,7 +456,7 @@ const confirmDelete = async () => {
 .friend-name {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #111;
+  color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -471,7 +471,7 @@ const confirmDelete = async () => {
 .meta-item {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #666;
+  color: var(--text-color-muted);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -493,7 +493,7 @@ const confirmDelete = async () => {
   align-items: center;
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.1s;
-  background: white;
+  background: var(--box-bg);
   box-shadow: var(--shadow-hard-sm);
 }
 
@@ -537,13 +537,13 @@ const confirmDelete = async () => {
 .confirm-title {
   font-size: 1.25rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
   margin-bottom: 10px;
 }
 
 .confirm-text {
   font-size: 0.85rem;
-  color: #4B5563;
+  color: var(--text-color-muted);
   line-height: 1.5;
   font-weight: 650;
   margin-bottom: 24px;

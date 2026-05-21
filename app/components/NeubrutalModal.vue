@@ -64,7 +64,7 @@ const handleOverlayClick = () => {
 }
 
 .modal-content {
-  background: white;
+  background: var(--box-bg);
   width: 100%;
   max-width: 420px;
   border-radius: 24px;

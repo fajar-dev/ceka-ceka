@@ -42,6 +42,37 @@ export const getDb = () => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `)
+
+    // Create bills table
+    _db.exec(`
+      CREATE TABLE IF NOT EXISTS bills (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        date TEXT NOT NULL,
+        people_count INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        icon_type TEXT,
+        icon_bg TEXT,
+        raw_data TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `)
+
+    // Create bill_payments table (checklist paid / unpaid)
+    _db.exec(`
+      CREATE TABLE IF NOT EXISTS bill_payments (
+        id TEXT PRIMARY KEY,
+        bill_id TEXT NOT NULL,
+        friend_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL,
+        is_paid INTEGER NOT NULL DEFAULT 0,
+        paid_at TEXT,
+        FOREIGN KEY (bill_id) REFERENCES bills(id) ON DELETE CASCADE
+      )
+    `)
   }
   return _db
 }

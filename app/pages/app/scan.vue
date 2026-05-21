@@ -635,8 +635,8 @@ const processOCR = async () => {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 85%;
-  background: white;
-  color: #111;
+  background: var(--box-bg);
+  color: var(--text-color);
   padding: 24px;
   text-align: center;
   display: flex;

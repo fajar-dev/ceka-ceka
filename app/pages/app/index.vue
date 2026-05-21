@@ -154,13 +154,19 @@ const formatDate = (dateStr: string) => {
             v-for="item in history.slice(0, 3)" 
             :key="item.id" 
             class="history-card neubrutal-box"
+            @click="useRouter().push(`/app/bill/${item.id}`)"
           >
             <div class="history-icon" :class="item.iconBg">
               <component :is="getIconComponent(item.iconType)" :size="24" />
             </div>
             <div class="history-details">
               <h3 class="history-title">{{ item.title }}</h3>
-              <p class="history-date">{{ formatDate(item.date) }} • {{ item.peopleCount }} {{ t('friendLabel') }}</p>
+              <p class="history-date">
+                {{ formatDate(item.date) }} • {{ item.peopleCount }} {{ t('friendLabel') }}
+                <span v-if="item.stats" class="history-progress-badge" :class="{ lunas: item.stats.progressPercent === 100 }">
+                  • {{ item.stats.progressPercent }}% {{ language === 'en' ? 'Paid' : 'Lunas' }}
+                </span>
+              </p>
             </div>
             <div class="history-amount">{{ formatCurrency(item.amount) }}</div>
           </div>
@@ -226,7 +232,7 @@ const formatDate = (dateStr: string) => {
   top: calc(100% + 8px);
   right: 0;
   width: 180px;
-  background: white;
+  background: var(--box-bg);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -330,13 +336,13 @@ const formatDate = (dateStr: string) => {
 .summary-amount {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
   margin-bottom: 8px;
 }
 
 .summary-badge {
   display: inline-block;
-  background: white;
+  background: var(--soft-yellow);
   border: 2px solid #111;
   padding: 4px 10px;
   border-radius: 20px;
@@ -358,7 +364,7 @@ const formatDate = (dateStr: string) => {
 .mini-receipt {
   width: 68px;
   height: 90px;
-  background: white;
+  background: #f0f0f0;
   border: 3px solid #111;
   border-radius: 6px;
   padding: 8px;
@@ -427,8 +433,8 @@ const formatDate = (dateStr: string) => {
   padding: 14px 18px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #666;
-  background: white;
+  color: var(--text-color-muted);
+  background: var(--box-bg);
 }
 
 .friends-scroll-container {
@@ -464,7 +470,7 @@ const formatDate = (dateStr: string) => {
   width: 52px;
   height: 52px;
   border-radius: 10px;
-  background: white;
+  background: var(--box-bg);
   border: 3px dashed #111;
   box-shadow: none;
   display: flex;
@@ -481,7 +487,7 @@ const formatDate = (dateStr: string) => {
 .friend-name {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #111;
+  color: var(--text-color);
 }
 
 /* History Section */
@@ -499,7 +505,7 @@ const formatDate = (dateStr: string) => {
   gap: 16px;
   transition: transform 0.2s;
   cursor: pointer;
-  background: white;
+  background: var(--box-bg);
   text-align: left;
 }
 .history-card:active {
@@ -516,7 +522,7 @@ const formatDate = (dateStr: string) => {
   justify-content: center;
   align-items: center;
   font-size: 1.5rem;
-  background: white;
+  background: var(--box-bg);
   flex-shrink: 0;
 }
 
@@ -541,13 +547,13 @@ const formatDate = (dateStr: string) => {
 .history-date {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #666;
+  color: var(--text-color-muted);
 }
 
 .history-amount {
   font-weight: 800;
   font-size: 1rem;
-  color: #111;
+  color: var(--text-color);
 }
 
 @media (max-width: 400px) {
@@ -597,5 +603,14 @@ const formatDate = (dateStr: string) => {
   .history-amount {
     font-size: 0.9rem;
   }
+}
+
+.history-progress-badge {
+  font-weight: 800;
+  color: #D97706;
+}
+
+.history-progress-badge.lunas {
+  color: #059669;
 }
 </style>

@@ -179,7 +179,26 @@ export const useCekaSettings = () => {
         cancelBillConfirmTitle: 'Batalkan Pembagian Tagihan?',
         cancelBillConfirmText: 'Apakah Anda yakin ingin membatalkan? Semua draf data tagihan ini akan dihapus secara permanen.',
         yesCancel: 'Ya, Batalkan',
-        goBack: 'Kembali'
+        goBack: 'Kembali',
+        // Bill Detail Page
+        detailBillTitle: 'Rincian Patungan',
+        itemsSubtotal: 'Subtotal Menu',
+        additionalFees: 'Biaya Tambahan',
+        discountLabel2: 'Diskon',
+        taxLabel2: 'Pajak',
+        grandTotal: 'Total Pembayaran',
+        paymentStatus: 'Status Pembayaran',
+        paidLabel: 'lunas',
+        tapToToggle: 'Ketuk nama teman untuk tandai lunas',
+        itemsAllocated: 'menu terpilih',
+        propFeeShare: 'Proporsi Biaya Tambahan',
+        propDiscountShare: 'Proporsi Potongan Diskon',
+        propTaxShare: 'Proporsi Pajak',
+        homeBtnLabel: 'Utama',
+        shareSplitBtn: 'Bagikan',
+        deleteBillTitle: 'Hapus Tagihan Ini?',
+        deleteBillConfirm: 'Apakah Anda yakin ingin menghapus permanen catatan tagihan dan daftar checklist pembayaran ini?',
+        deleteBtn: 'Hapus'
       },
       en: {
         settingsTitle: 'Settings',
@@ -310,7 +329,26 @@ export const useCekaSettings = () => {
         cancelBillConfirmTitle: 'Cancel Bill Splitting?',
         cancelBillConfirmText: 'Are you sure you want to cancel? All draft data for this bill will be permanently deleted.',
         yesCancel: 'Yes, Cancel',
-        goBack: 'Go Back'
+        goBack: 'Go Back',
+        // Bill Detail Page
+        detailBillTitle: 'Bill Split Details',
+        itemsSubtotal: 'Items Subtotal',
+        additionalFees: 'Additional Fees',
+        discountLabel2: 'Discount',
+        taxLabel2: 'Tax',
+        grandTotal: 'Grand Total',
+        paymentStatus: 'Payment Status',
+        paidLabel: 'paid',
+        tapToToggle: 'Tap on a friend to toggle payment status',
+        itemsAllocated: 'items allocated',
+        propFeeShare: 'Proportional Fee Share',
+        propDiscountShare: 'Proportional Discount Share',
+        propTaxShare: 'Proportional Tax Share',
+        homeBtnLabel: 'Home',
+        shareSplitBtn: 'Share Split',
+        deleteBillTitle: 'Delete Bill Split?',
+        deleteBillConfirm: 'Are you sure you want to permanently delete this bill record and all checklists?',
+        deleteBtn: 'Delete'
       }
     }
 

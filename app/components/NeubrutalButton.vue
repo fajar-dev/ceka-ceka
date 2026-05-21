@@ -58,9 +58,9 @@ const handleClick = (event: MouseEvent) => {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color, #111);
   text-decoration: none;
-  background-color: white;
+  background-color: var(--box-bg);
   border: 3px solid #111;
   border-radius: 12px;
   cursor: pointer;
@@ -78,7 +78,7 @@ const handleClick = (event: MouseEvent) => {
 }
 
 .neubrutal-btn.ghost {
-  background-color: white;
+  background-color: var(--box-bg);
 }
 
 .neubrutal-btn.danger {

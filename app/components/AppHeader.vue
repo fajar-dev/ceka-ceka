@@ -73,9 +73,9 @@ const handleBack = () => {
   justify-content: center;
   align-items: center;
   border-radius: 12px;
-  color: #111;
+  color: var(--text-color);
   text-decoration: none;
-  background: white;
+  background: var(--box-bg);
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: var(--shadow-hard-sm);
   border: 3px solid #111;
@@ -90,7 +90,7 @@ const handleBack = () => {
 .page-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
   text-align: center;
   flex: 1;
 }

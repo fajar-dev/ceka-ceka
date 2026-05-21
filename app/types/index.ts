@@ -59,6 +59,11 @@ export interface HistoryRecord {
     name: string;
     amount: number;
   }[];
+  stats?: {
+    totalCount: number;
+    paidCount: number;
+    progressPercent: number;
+  };
 }
 
 export interface LanguageDictionary {

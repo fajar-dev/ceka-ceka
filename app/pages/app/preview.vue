@@ -206,63 +206,94 @@ const goBackToEdit = () => {
   useRouter().push('/app/bill')
 }
 
-const saveAndCommitSplit = () => {
+const saveAndCommitSplit = async () => {
   if (!pendingBill.value) return
   
-  const savedHistory = localStorage.getItem('ceka_history')
-  const history = savedHistory ? JSON.parse(savedHistory) : []
-  
+  const billId = `bill_${Date.now()}`
   const validItems = pendingBill.value.items
   
-  const newBill: HistoryRecord = {
-    id: Date.now(),
+  const payload = {
+    id: billId,
     title: pendingBill.value.title,
     date: pendingBill.value.date,
     peopleCount: pendingBill.value.selectedFriendIds.length || 1,
     amount: totalAmount.value,
     iconType: pendingBill.value.category,
     iconBg: getIconBg(pendingBill.value.category),
-    items: validItems.map(item => ({
-      name: item.name,
-      price: parseInt(item.price as string) || 0,
-      quantity: parseInt(item.quantity as string) || 1,
-      totalPrice: parseInt(item.totalPrice as string) || 0,
-      assignments: item.assignments || {}
-    })),
-    invitedFriends: pendingBill.value.selectedFriendIds.map(id => {
-      const f = getFriendDetails(id)
-      return f ? { id: f.id, name: f.name, avatarBg: f.avatarBg } : null
-    }).filter((f): f is Friend => f !== null),
-    taxType: pendingBill.value.taxType,
-    taxPercent: parseFloat(pendingBill.value.taxPercent as unknown as string) || 0,
-    taxManual: parseFloat(pendingBill.value.taxManual as unknown as string) || 0,
-    taxAmount: taxAmount.value,
-    discountType: pendingBill.value.discountType,
-    discountPercent: parseFloat(pendingBill.value.discountPercent as unknown as string) || 0,
-    discountManual: parseFloat(pendingBill.value.discountManual as unknown as string) || 0,
-    discountAmount: discountAmount.value,
-    otherFees: (pendingBill.value.otherFees || []).map(fee => ({
-      name: fee.name || 'Biaya Tambahan',
-      amount: parseFloat(fee.amount as string) || 0
-    })),
-    subtotalItems: subtotalItems.value,
-    subtotalOtherFees: subtotalOtherFees.value,
+    rawData: {
+      items: validItems.map(item => ({
+        name: item.name,
+        price: parseInt(item.price as string) || 0,
+        quantity: parseInt(item.quantity as string) || 1,
+        totalPrice: parseInt(item.totalPrice as string) || 0,
+        assignments: item.assignments || {}
+      })),
+      invitedFriends: pendingBill.value.selectedFriendIds.map(id => {
+        const f = getFriendDetails(id)
+        return f ? { id: f.id, name: f.name, avatarBg: f.avatarBg } : null
+      }).filter((f): f is Friend => f !== null),
+      taxType: pendingBill.value.taxType,
+      taxPercent: parseFloat(pendingBill.value.taxPercent as unknown as string) || 0,
+      taxManual: parseFloat(pendingBill.value.taxManual as unknown as string) || 0,
+      taxAmount: taxAmount.value,
+      discountType: pendingBill.value.discountType,
+      discountPercent: parseFloat(pendingBill.value.discountPercent as unknown as string) || 0,
+      discountManual: parseFloat(pendingBill.value.discountManual as unknown as string) || 0,
+      discountAmount: discountAmount.value,
+      otherFees: (pendingBill.value.otherFees || []).map(fee => ({
+        name: fee.name || 'Biaya Tambahan',
+        amount: parseFloat(fee.amount as string) || 0
+      })),
+      subtotalItems: subtotalItems.value,
+      subtotalOtherFees: subtotalOtherFees.value,
+    },
     shares: individualShares.value.map(share => ({
       friendId: share.id,
       name: share.name,
       amount: share.finalTotal
     }))
   }
-  
-  history.unshift(newBill)
-  localStorage.setItem('ceka_history', JSON.stringify(history))
-  
-  // Clear draft & pending bills
-  localStorage.removeItem('ceka_bill_draft')
-  localStorage.removeItem('ceka_pending_bill')
-  
-  // Back to home
-  useRouter().push('/app')
+
+  try {
+    // 1. Post to the Nitro/SQLite backend
+    await $fetch('/api/bills', {
+      method: 'POST',
+      body: payload
+    })
+
+    // 2. Also keep localStorage updated for other legacy pages
+    const savedHistory = localStorage.getItem('ceka_history')
+    const history = savedHistory ? JSON.parse(savedHistory) : []
+    const newBill = {
+      ...payload,
+      id: Date.now(), // Use standard timestamp for fallback history id
+      items: payload.rawData.items,
+      invitedFriends: payload.rawData.invitedFriends,
+      taxType: payload.rawData.taxType,
+      taxPercent: payload.rawData.taxPercent,
+      taxManual: payload.rawData.taxManual,
+      taxAmount: payload.rawData.taxAmount,
+      discountType: payload.rawData.discountType,
+      discountPercent: payload.rawData.discountPercent,
+      discountManual: payload.rawData.discountManual,
+      discountAmount: payload.rawData.discountAmount,
+      otherFees: payload.rawData.otherFees,
+      subtotalItems: payload.rawData.subtotalItems,
+      subtotalOtherFees: payload.rawData.subtotalOtherFees,
+    }
+    history.unshift(newBill)
+    localStorage.setItem('ceka_history', JSON.stringify(history))
+
+    // 3. Clear draft & pending bills
+    localStorage.removeItem('ceka_bill_draft')
+    localStorage.removeItem('ceka_pending_bill')
+    
+    // 4. Redirect to the detail bill page!
+    useRouter().push(`/app/bill/${billId}`)
+  } catch (error) {
+    console.error('Failed to commit bill to database:', error)
+    alert(language.value === 'en' ? 'Failed to save bill to database. Please try again.' : 'Gagal menyimpan tagihan ke database. Silakan coba lagi.')
+  }
 }
 </script>
 
@@ -416,7 +447,7 @@ const saveAndCommitSplit = () => {
 
 .bill-info-summary-card {
   padding: 20px;
-  background: white;
+  background: var(--box-bg);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -453,12 +484,12 @@ const saveAndCommitSplit = () => {
 .bill-preview-title {
   font-size: 1.2rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
 }
 
 .bill-preview-date {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-color-muted);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -492,7 +523,7 @@ const saveAndCommitSplit = () => {
 
 .total-row {
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
   font-size: 1rem;
   border-top: 2px dashed #ccc;
   padding-top: 10px;
@@ -511,7 +542,7 @@ const saveAndCommitSplit = () => {
   gap: 8px;
   font-size: 0.85rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
   margin-top: 10px;
   border-bottom: 2px solid #111;
   padding-bottom: 8px;
@@ -527,7 +558,7 @@ const saveAndCommitSplit = () => {
 
 .share-row-card {
   padding: 16px;
-  background: white;
+  background: var(--box-bg);
   transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -559,12 +590,12 @@ const saveAndCommitSplit = () => {
 .share-name {
   font-size: 0.95rem;
   font-weight: 850;
-  color: #111;
+  color: var(--text-color);
 }
 
 .share-items-count {
   font-size: 0.7rem;
-  color: #666;
+  color: var(--text-color-muted);
   font-weight: 650;
 }
 
@@ -577,14 +608,14 @@ const saveAndCommitSplit = () => {
 .share-total-amount {
   font-size: 1.05rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
 }
 
 .expand-arrow-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,19 +661,19 @@ const saveAndCommitSplit = () => {
 }
 
 .drawer-item-name {
-  color: #111;
+  color: var(--text-color);
   font-weight: 750;
   text-align: left;
 }
 
 .drawer-item-portion {
-  color: #666;
+  color: var(--text-color-muted);
   font-size: 0.72rem;
 }
 
 .drawer-item-cost {
   font-weight: 800;
-  color: #111;
+  color: var(--text-color);
 }
 
 .adjustment-row {

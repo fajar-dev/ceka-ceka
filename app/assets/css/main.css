@@ -85,6 +85,11 @@ h1, h2, h3, h4, h5, h6, .outfit-font {
   background-color: var(--box-bg);
 }
 
+/* bg-white maps to box-bg so dark mode can override it properly */
+.bg-white {
+  background-color: var(--box-bg) !important;
+}
+
 .neubrutal-tag {
   display: inline-flex;
   align-items: center;

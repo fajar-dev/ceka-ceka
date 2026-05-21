@@ -168,7 +168,7 @@ onMounted(() => {
 
 .settings-card {
   padding: 24px 20px;
-  background: white;
+  background: var(--box-bg);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -204,7 +204,7 @@ onMounted(() => {
 .setting-label-title {
   font-size: 1.05rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -212,7 +212,7 @@ onMounted(() => {
 
 .setting-desc {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-color-muted);
   font-weight: 700;
 }
 
@@ -229,7 +229,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  background: white;
+  background: var(--box-bg);
   border-radius: 12px;
   border: 2.5px solid #111;
   font-weight: 800;
@@ -261,7 +261,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: white;
+  background: var(--box-bg);
   border-radius: 12px;
   border: 2.5px solid #111;
   cursor: pointer;
@@ -289,12 +289,12 @@ onMounted(() => {
 .lang-text {
   font-weight: 800;
   font-size: 0.9rem;
-  color: #111;
+  color: var(--text-color);
   flex: 1;
 }
 
 .check-icon {
-  color: #111;
+  color: var(--text-color);
 }
 
 /* Currency Grid */
@@ -309,7 +309,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 44px;
-  background: white;
+  background: var(--box-bg);
   border-radius: 10px;
   border: 2.5px solid #111;
   cursor: pointer;
@@ -331,7 +331,7 @@ onMounted(() => {
 .currency-symbol {
   font-size: 0.95rem;
   font-weight: 900;
-  color: #111;
+  color: var(--text-color);
 }
 
 /* Save Actions & Toast */
