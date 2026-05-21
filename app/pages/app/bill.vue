@@ -6,7 +6,7 @@ import { useCekaFriends } from '~/composables/useCekaFriends'
 import type { Friend, BillItem, OtherFee, Bill } from '~/types'
 
 const { currency, loadSettings, t, language } = useCekaSettings()
-const { allFriends, loadFriends, getInitials, getFriendDetails } = useCekaFriends()
+const { allFriends, loadFriends, getInitials, getFriendDetails, addFriend } = useCekaFriends()
 
 const bill = ref<Bill>({
   title: '',
@@ -34,6 +34,41 @@ const categories = computed(() => [
 const selectedFriendIds = ref<(string | number)[]>([])
 const showInviteModal = ref(false)
 const inviteSearchQuery = ref('')
+
+// Quick Add Friend States
+const showQuickAddFriendModal = ref(false)
+const quickFriendForm = ref({
+  name: '',
+  phone: '',
+  email: ''
+})
+
+const openQuickAddFriendModal = () => {
+  quickFriendForm.value = { name: '', phone: '', email: '' }
+  showQuickAddFriendModal.value = true
+}
+
+const handleQuickAddFriendSubmit = async () => {
+  if (!quickFriendForm.value.name.trim()) return
+  
+  await addFriend(
+    quickFriendForm.value.name,
+    quickFriendForm.value.phone,
+    quickFriendForm.value.email
+  )
+  
+  // Auto-select the newly added friend after a brief moment to allow fetch reload
+  setTimeout(() => {
+    const added = allFriends.value.find(
+      f => f.name.toLowerCase() === quickFriendForm.value.name.trim().toLowerCase()
+    )
+    if (added && !selectedFriendIds.value.includes(added.id)) {
+      selectedFriendIds.value.push(added.id)
+    }
+  }, 350)
+
+  showQuickAddFriendModal.value = false
+}
 
 // Item assignment modal state
 const activeAssignItemIndex = ref<number | null>(null)
@@ -778,15 +813,20 @@ const goToPreviewSplit = () => {
       </div>
 
       <div class="modal-body">
-        <!-- Search Friend to Invite -->
-        <div class="search-wrapper-new">
-          <Search :size="18" :stroke-width="3" class="search-icon-new" />
-          <input 
-            type="text" 
-            v-model="inviteSearchQuery" 
-            :placeholder="t('searchFriendPlaceholder')" 
-            class="neubrutal-input search-input-new"
-          />
+        <!-- Search & Quick Add Friend -->
+        <div class="search-and-add-wrapper">
+          <div class="search-input-container">
+            <Search :size="18" :stroke-width="3" class="search-icon-new" />
+            <input 
+              type="text" 
+              v-model="inviteSearchQuery" 
+              :placeholder="t('searchFriendPlaceholder')" 
+              class="neubrutal-input search-input-new"
+            />
+          </div>
+          <NeubrutalButton variant="primary" custom-class="add-friend-btn-quick" @click="openQuickAddFriendModal" title="Tambah Teman Baru">
+            <Plus :size="22" :stroke-width="3.5" />
+          </NeubrutalButton>
         </div>
 
         <!-- Friends Checklist List -->
@@ -816,6 +856,66 @@ const goToPreviewSplit = () => {
           {{ t('doneBtn') }} ({{ selectedFriendIds.length }} {{ t('friendLabel') }})
         </NeubrutalButton>
       </div>
+    </NeubrutalModal>
+
+    <!-- Quick Add Friend Modal -->
+    <NeubrutalModal :show="showQuickAddFriendModal" accent="primary" @close="showQuickAddFriendModal = false">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <h2 class="modal-title">
+            <UserPlus class="title-icon" :size="20" :stroke-width="2.5" />
+            {{ t('addFriendBtn') }}
+          </h2>
+          <span class="modal-subtitle">
+            {{ language === 'en' ? 'Add a new friend to split bills with' : 'Tambah teman patungan baru ke dalam daftar' }}
+          </span>
+        </div>
+        <button class="close-modal-btn" @click="showQuickAddFriendModal = false">
+          <X :size="20" :stroke-width="2.5" />
+        </button>
+      </div>
+      
+      <form @submit.prevent="handleQuickAddFriendSubmit" class="modal-body">
+        <div class="form-field">
+          <label class="form-label">{{ t('nameLabel') }} <span class="required">*</span></label>
+          <input 
+            type="text" 
+            v-model="quickFriendForm.name" 
+            :placeholder="t('namePlaceholder')" 
+            class="neubrutal-input" 
+            required 
+          />
+        </div>
+        
+        <div class="form-field">
+          <label class="form-label">{{ t('phoneLabel') }}</label>
+          <input 
+            type="tel" 
+            v-model="quickFriendForm.phone" 
+            :placeholder="t('phonePlaceholder')" 
+            class="neubrutal-input" 
+          />
+        </div>
+        
+        <div class="form-field">
+          <label class="form-label">{{ t('emailLabel') }}</label>
+          <input 
+            type="email" 
+            v-model="quickFriendForm.email" 
+            :placeholder="t('emailPlaceholder')" 
+            class="neubrutal-input" 
+          />
+        </div>
+
+        <div class="modal-footer">
+          <NeubrutalButton variant="ghost" custom-class="modal-btn" @click="showQuickAddFriendModal = false">
+            {{ t('cancel') }}
+          </NeubrutalButton>
+          <NeubrutalButton type="submit" variant="primary" custom-class="modal-btn">
+            {{ t('save') }}
+          </NeubrutalButton>
+        </div>
+      </form>
     </NeubrutalModal>
 
     <!-- Assign Friends to Specific Item Modal (Modal-driven portions) -->
@@ -1683,6 +1783,50 @@ const goToPreviewSplit = () => {
   border-radius: 12px !important;
   box-shadow: 2px 2px 0px #111 !important;
   background: #F9FAFB !important;
+}
+
+.search-and-add-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input-container {
+  position: relative;
+  flex: 1;
+}
+
+:deep(.add-friend-btn-quick) {
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 12px !important;
+  border: 2.5px solid #111 !important;
+  box-shadow: 2px 2px 0px #111 !important;
+}
+
+:deep(.add-friend-btn-quick:active) {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px #111 !important;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+:deep(.modal-btn) {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 1rem;
+  box-shadow: var(--shadow-hard-sm) !important;
 }
 
 .friends-invite-list-new {

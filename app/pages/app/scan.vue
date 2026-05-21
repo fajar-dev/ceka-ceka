@@ -16,6 +16,20 @@ const isCaptured = ref(false)
 const capturedImage = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const isScanning = ref(false)
+const toastMessage = ref<string | null>(null)
+const toastType = ref<'error' | 'success'>('error')
+
+const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+  toastMessage.value = message
+  toastType.value = type
+  
+  // Auto-hide toast after 5 seconds
+  setTimeout(() => {
+    if (toastMessage.value === message) {
+      toastMessage.value = null
+    }
+  }, 5000)
+}
 
 onMounted(() => {
   loadSettings()
@@ -117,6 +131,8 @@ const handleFileSelect = (event: Event) => {
     capturedImage.value = e.target?.result as string
     isCaptured.value = true
     stopCamera()
+    // Clear the file input immediately so the user can re-select the same file if desired
+    target.value = ''
   }
   reader.readAsDataURL(file)
 }
@@ -124,42 +140,133 @@ const handleFileSelect = (event: Event) => {
 const retakePhoto = () => {
   isCaptured.value = false
   capturedImage.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
   startCamera()
 }
 
-const processOCR = () => {
+const processOCR = async () => {
+  const isEnglish = language.value === 'en'
+
+  if (!capturedImage.value) {
+    showToast(
+      isEnglish 
+        ? 'Please capture a photo or choose an image first.' 
+        : 'Silakan ambil foto atau pilih gambar terlebih dahulu.', 
+      'error'
+    )
+    return
+  }
+
   isScanning.value = true
   
-  // Simulate AI scanning receipt
-  setTimeout(() => {
+  try {
+    const response = await $fetch<{ success: boolean; data: any }>('/api/scan-bill', {
+      method: 'POST',
+      body: {
+        image: capturedImage.value,
+        lang: language.value
+      }
+    })
+
     isScanning.value = false
-    
-    // Save new scanned bill to localStorage
-    const savedHistory = localStorage.getItem('ceka_history')
-    const history = savedHistory ? JSON.parse(savedHistory) : []
-    
-    const randomAmount = Math.floor(Math.random() * 150000) + 50000 // 50k to 200k
-    const newBill = {
-      id: Date.now(),
-      title: 'Pindai Struk AI - ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toISOString().substring(0, 10),
-      peopleCount: 3,
-      amount: randomAmount,
-      iconType: 'file',
-      iconBg: 'icon-bg-0'
+
+    if (response.success && response.data?.isBill) {
+      const geminiData = response.data
+      
+      // Map items cleanly, ensuring strings for numeric bindings where Vue uses sanitizeNumber
+      const mappedItems = (geminiData.items || []).map((item: any) => ({
+        name: item.name || '',
+        price: item.price !== undefined && item.price !== null ? String(item.price) : '',
+        quantity: item.quantity !== undefined && item.quantity !== null ? Number(item.quantity) : 1,
+        totalPrice: item.totalPrice !== undefined && item.totalPrice !== null ? String(item.totalPrice) : '',
+        assignments: {}
+      }))
+      
+      if (mappedItems.length === 0) {
+        mappedItems.push({ name: '', price: '', quantity: 1, totalPrice: '', assignments: {} })
+      }
+
+      // Map other fees cleanly
+      const mappedOtherFees = (geminiData.otherFees || []).map((fee: any) => ({
+        name: fee.name || '',
+        amount: fee.amount !== undefined && fee.amount !== null ? String(fee.amount) : ''
+      }))
+
+      // Prepare draft state for bill.vue
+      const draft = {
+        bill: {
+          title: geminiData.title || '',
+          date: geminiData.date || new Date().toISOString().substring(0, 10),
+          category: geminiData.category || 'file',
+          items: mappedItems,
+          taxType: geminiData.taxType || 'percent',
+          taxPercent: geminiData.taxPercent !== undefined && geminiData.taxPercent !== null && Number(geminiData.taxPercent) > 0 ? String(geminiData.taxPercent) : '',
+          taxManual: geminiData.taxManual !== undefined && geminiData.taxManual !== null && Number(geminiData.taxManual) > 0 ? String(geminiData.taxManual) : '',
+          discountType: geminiData.discountType || 'manual',
+          discountPercent: geminiData.discountPercent !== undefined && geminiData.discountPercent !== null && Number(geminiData.discountPercent) > 0 ? String(geminiData.discountPercent) : '',
+          discountManual: geminiData.discountManual !== undefined && geminiData.discountManual !== null && Number(geminiData.discountManual) > 0 ? String(geminiData.discountManual) : '',
+          otherFees: mappedOtherFees
+        },
+        selectedFriendIds: ['you'] // Default selected friend is 'you'
+      }
+
+      // Save draft to localStorage so bill.vue instantly loads it
+      localStorage.setItem('ceka_bill_draft', JSON.stringify(draft))
+      
+      // Redirect to the bill split form page
+      router.push('/app/bill')
+    } else {
+      // Image is not a bill or blurry
+      let reason = response.data?.reason || (isEnglish ? 'Unclear image or not a receipt.' : 'Gambar tidak jelas atau bukan struk.')
+      if (reason.length > 100) {
+        reason = reason.substring(0, 97) + '...'
+      }
+      retakePhoto()
+      showToast(reason, 'error')
     }
+  } catch (error: any) {
+    isScanning.value = false
+    console.error('Scan error:', error)
+    retakePhoto()
     
-    history.unshift(newBill)
-    localStorage.setItem('ceka_history', JSON.stringify(history))
+    // Extract server-side statusMessage or general error
+    const defaultError = isEnglish ? 'Failed to process image.' : 'Gagal memproses gambar.'
+    let errorMsg = error.data?.statusMessage || error.message || defaultError
     
-    // Redirect to app
-    router.push('/app')
-  }, 2500)
+    // Translate standard error responses
+    if (errorMsg === 'Unauthorized') {
+      errorMsg = isEnglish ? 'Session expired. Please log in again.' : 'Sesi kedaluwarsa. Silakan masuk kembali.'
+    } else if (errorMsg.includes('fetch failed') || errorMsg.includes('Failed to fetch')) {
+      errorMsg = isEnglish ? 'Network error. Please check your connection.' : 'Koneksi bermasalah. Cek koneksi internet Anda.'
+    } else if (errorMsg.includes('Gemini API Key is not configured') || errorMsg.includes('not configured')) {
+      errorMsg = isEnglish 
+        ? 'Gemini API Key is not configured. Please set GEMINI_API_KEY in your .env file.' 
+        : 'Kunci API Gemini belum dikonfigurasi. Silakan setel GEMINI_API_KEY di file .env Anda.'
+    }
+
+    if (errorMsg.length > 100) {
+      errorMsg = errorMsg.substring(0, 97) + '...'
+    }
+    showToast(errorMsg, 'error')
+  }
 }
 </script>
 
 <template>
   <div class="neubrutal-container scan-page-container">
+    <!-- Neubrutalist Toast Alert Overlay -->
+    <transition name="toast-slide">
+      <div v-if="toastMessage" class="toast-alert neubrutal-box" :class="toastType">
+        <div class="toast-content">
+          <span class="toast-icon">⚠️</span>
+          <span class="toast-text">{{ toastMessage }}</span>
+        </div>
+        <button class="toast-close" @click="toastMessage = null">&times;</button>
+      </div>
+    </transition>
+
     <!-- Camera Feed (Full Screen Behind) -->
     <div class="camera-fullscreen-wrapper">
       <div v-show="!isCaptured" class="video-container">
@@ -548,5 +655,88 @@ const processOCR = () => {
   padding: 10px 20px;
   box-shadow: var(--shadow-hard-sm);
   font-size: 0.95rem;
+}
+
+/* Toast Alert Neubrutalist Styling */
+.toast-alert {
+  position: absolute;
+  top: 90px;
+  left: 20px;
+  right: 20px;
+  z-index: 999;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 #000;
+  border-radius: var(--radius-lg);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.toast-alert.error {
+  background-color: #EF4444 !important; /* Cherry Red for Errors */
+  color: white !important;
+}
+
+.toast-alert.success {
+  background-color: var(--mint-green) !important;
+  color: #111 !important;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.toast-icon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+
+.toast-text {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: inherit !important;
+}
+
+.toast-close {
+  background: none;
+  border: none !important;
+  color: inherit !important;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toast Slide Transition */
+.toast-slide-enter-active, .toast-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast-slide-enter-from {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+.toast-slide-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+</style>
+
+<style>
+.dark-theme .floating-header .back-btn {
+  background: #1E1E22 !important;
+  color: #F4F4F5 !important;
 }
 </style>

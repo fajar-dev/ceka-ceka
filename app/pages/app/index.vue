@@ -66,6 +66,8 @@ const formatDate = (dateStr: string) => {
         
         <!-- Dropdown Menu -->
         <div class="avatar-dropdown neubrutal-box" v-if="isDropdownOpen">
+          <div class="dropdown-user-greeting">Hi!, {{ user?.name }} </div>
+          <div class="dropdown-divider"></div>
           <NuxtLink to="/app/setting" class="dropdown-item" @click="isDropdownOpen = false" style="text-decoration: none; display: flex; align-items: center; color: inherit;">
             <Settings :size="18" />
             <span style="margin-left: 6px; font-weight: 850;">{{ t('settingsTitle') }}</span>
@@ -223,12 +225,19 @@ const formatDate = (dateStr: string) => {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 160px;
+  width: 180px;
   background: white;
   z-index: 100;
   display: flex;
   flex-direction: column;
   padding: 8px 0;
+}
+
+.dropdown-user-greeting {
+  margin: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-color, #111);
 }
 
 .dropdown-item {
