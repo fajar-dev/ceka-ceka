@@ -635,21 +635,26 @@ const downloadBillAsPng = async () => {
     <NeubrutalModal :show="showShareModal" accent="primary" @close="showShareModal = false">
       <div class="share-modal-body">
         <div class="share-modal-icon neubrutal-box">
-          <Link :size="28" :stroke-width="2.5" />
+          <Share2 :size="28" :stroke-width="2.5" />
         </div>
-        
+
         <h2 class="confirm-title">{{ language === 'en' ? 'Share Bill' : 'Bagikan Tagihan' }}</h2>
         <p class="confirm-text">
-          {{ language === 'en' ? 'Anyone with the link can view this bill' : 'Siapa saja dengan link bisa melihat tagihan ini' }}
+          {{ language === 'en' ? 'Anyone with the link can view this bill without login' : 'Siapa saja dengan link bisa melihat tagihan ini tanpa login' }}
         </p>
 
-        <!-- Toggle Switch -->
+        <!-- Toggle Row -->
         <div class="share-toggle-row">
-          <span class="share-toggle-label">{{ language === 'en' ? 'Enable sharing' : 'Aktifkan sharing' }}</span>
-          <button 
-            class="neubrutal-toggle" 
-            :class="{ active: shareEnabled }" 
-            @click="toggleShare" 
+          <div class="share-toggle-info">
+            <span class="share-toggle-label">{{ language === 'en' ? 'Enable sharing' : 'Aktifkan link' }}</span>
+            <span class="share-toggle-status" :class="{ active: shareEnabled }">
+              {{ shareEnabled ? (language === 'en' ? 'Active' : 'Aktif') : (language === 'en' ? 'Off' : 'Nonaktif') }}
+            </span>
+          </div>
+          <button
+            class="neubrutal-toggle"
+            :class="{ active: shareEnabled, loading: isTogglingShare }"
+            @click="toggleShare"
             :disabled="isTogglingShare"
           >
             <div class="toggle-knob"></div>
@@ -657,19 +662,39 @@ const downloadBillAsPng = async () => {
         </div>
 
         <!-- Share Link Section -->
-        <div class="share-link-section" v-if="shareEnabled && shareCode">
-          <div class="share-link-box neubrutal-box">
-            <span class="share-link-text">{{ getShareUrl() }}</span>
+        <transition name="fade-slide">
+          <div class="share-link-section" v-if="shareEnabled && shareCode">
+            <div class="share-link-label">
+              <Link :size="12" :stroke-width="3" />
+              {{ language === 'en' ? 'Share link' : 'Link berbagi' }}
+            </div>
+            <div class="share-link-box neubrutal-box">
+              <span class="share-link-text">{{ getShareUrl() }}</span>
+            </div>
+
+            <div class="share-link-actions">
+              <NeubrutalButton variant="primary" custom-class="share-copy-btn" @click="copyShareLink">
+                <Copy :size="15" :stroke-width="3" /> {{ language === 'en' ? 'Copy Link' : 'Salin Link' }}
+              </NeubrutalButton>
+              <button
+                class="share-reset-btn neubrutal-box"
+                @click="resetShareCode"
+                :disabled="isResettingCode"
+                :title="language === 'en' ? 'Reset link' : 'Reset link'"
+              >
+                <RefreshCw :size="15" :stroke-width="3" :class="{ spinning: isResettingCode }" />
+              </button>
+            </div>
+
+            <p class="share-reset-hint">
+              {{ language === 'en' ? 'Reset to invalidate the old link and generate a new one' : 'Reset untuk menonaktifkan link lama dan membuat link baru' }}
+            </p>
           </div>
-          
-          <div class="share-link-actions">
-            <NeubrutalButton variant="primary" custom-class="flex-1" @click="copyShareLink">
-              <Copy :size="16" :stroke-width="3" /> {{ language === 'en' ? 'Copy Link' : 'Salin Link' }}
-            </NeubrutalButton>
-            <NeubrutalButton variant="ghost" custom-class="reset-link-btn" @click="resetShareCode" :disabled="isResettingCode">
-              <RefreshCw :size="16" :stroke-width="3" :class="{ spinning: isResettingCode }" />
-            </NeubrutalButton>
-          </div>
+        </transition>
+
+        <!-- Disabled state hint -->
+        <div class="share-disabled-hint" v-if="!shareEnabled">
+          <span>{{ language === 'en' ? 'Enable sharing to get a shareable link' : 'Aktifkan untuk mendapatkan link berbagi' }}</span>
         </div>
       </div>
     </NeubrutalModal>
@@ -1357,6 +1382,294 @@ const downloadBillAsPng = async () => {
   color: var(--text-color) !important;
   border-bottom-color: var(--border-color) !important;
 }
+
+/* ===== Share Modal ===== */
+.share-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 6px 4px 4px;
+}
+
+.share-modal-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--pastel-blue);
+  color: #111;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+  border: 3px solid #111;
+  box-shadow: 3px 3px 0px #111;
+}
+
+.share-modal-body .confirm-title {
+  margin-bottom: 6px;
+}
+
+.share-modal-body .confirm-text {
+  margin-bottom: 20px;
+}
+
+.share-toggle-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-color);
+  border: 2.5px solid #111;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 2px 2px 0px #111;
+  margin-bottom: 16px;
+}
+
+.share-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.share-toggle-label {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-color);
+}
+
+.share-toggle-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #9CA3AF;
+}
+
+.share-toggle-status.active {
+  color: #059669;
+}
+
+/* Neubrutalist Toggle Switch */
+.neubrutal-toggle {
+  width: 50px;
+  height: 28px;
+  border-radius: 14px;
+  border: 2.5px solid #111;
+  background: #E5E7EB;
+  box-shadow: 2px 2px 0px #111;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+
+.neubrutal-toggle.active {
+  background: var(--mint-green);
+  box-shadow: 2px 2px 0px #111;
+}
+
+.neubrutal-toggle:disabled,
+.neubrutal-toggle.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggle-knob {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #111;
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  transition: left 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.neubrutal-toggle.active .toggle-knob {
+  left: 25px;
+}
+
+/* Share Link */
+.share-link-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.share-link-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-color-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.share-link-box {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-color);
+  border: 2.5px solid #111 !important;
+  border-radius: 10px !important;
+  box-shadow: 2px 2px 0px #111 !important;
+  overflow: hidden;
+}
+
+.share-link-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-color);
+  word-break: break-all;
+  display: block;
+  font-family: monospace;
+  line-height: 1.5;
+}
+
+.share-link-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+:deep(.share-copy-btn) {
+  flex: 1;
+  padding: 11px !important;
+  font-size: 0.9rem !important;
+  font-weight: 850 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  box-shadow: 3px 3px 0px #111 !important;
+}
+
+:deep(.share-copy-btn:active) {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #111 !important;
+}
+
+.share-reset-btn {
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid #111 !important;
+  border-radius: 12px !important;
+  box-shadow: 3px 3px 0px #111 !important;
+  background: var(--box-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-color);
+  flex-shrink: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.share-reset-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #111 !important;
+}
+
+.share-reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.share-reset-hint {
+  font-size: 0.7rem;
+  color: var(--text-color-muted);
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.5;
+  padding: 0 4px;
+}
+
+.share-disabled-hint {
+  width: 100%;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-color-muted);
+  background: var(--bg-color);
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* Spinning animation */
+.spinning {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Fade slide transition for link section */
+.fade-slide-enter-active {
+  animation: fadeSlideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1);
+}
+
+.fade-slide-leave-active {
+  animation: fadeSlideIn 0.18s reverse ease-in;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dark mode for share modal */
+:global(.dark-theme) .share-toggle-row {
+  background: var(--box-bg-alt) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 2px 2px 0px var(--border-color) !important;
+}
+
+:global(.dark-theme) .neubrutal-toggle {
+  background: #374151;
+  border-color: var(--border-color) !important;
+  box-shadow: 2px 2px 0px var(--border-color) !important;
+}
+
+:global(.dark-theme) .neubrutal-toggle.active {
+  background: var(--mint-green);
+}
+
+:global(.dark-theme) .toggle-knob {
+  background: #E5E7EB;
+  border-color: var(--border-color) !important;
+}
+
+:global(.dark-theme) .share-link-box {
+  background: var(--box-bg-alt) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 2px 2px 0px var(--border-color) !important;
+}
+
+:global(.dark-theme) .share-reset-btn {
+  background: var(--box-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 3px 3px 0px var(--border-color) !important;
+}
+
+:global(.dark-theme) .share-disabled-hint {
+  border-color: var(--border-color) !important;
+  background: var(--box-bg-alt) !important;
+}
+
+:global(.dark-theme) .share-modal-icon {
+  border-color: var(--border-color) !important;
+  box-shadow: 3px 3px 0px var(--border-color) !important;
+}
+
+/* ===== End Share Modal ===== */
 
 @media (max-width: 480px) {
   .app-main {
