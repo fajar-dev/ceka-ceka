@@ -17,9 +17,17 @@ const iconOptions = [
   { value: 'coffee', label: 'Kopi / Cafe', icon: Coffee, bgClass: 'icon-bg-2' }
 ]
 
-onMounted(() => {
+const isLoading = ref(true)
+
+onMounted(async () => {
   loadSettings()
-  loadHistory()
+  try {
+    await loadHistory()
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 const getIconComponent = (type: string) => {
@@ -81,7 +89,13 @@ const filteredHistory = computed((): HistoryRecord[] => {
         </div>
 
         <div class="history-list">
-          <div v-if="filteredHistory.length === 0" class="empty-state neubrutal-box">
+          <div v-if="isLoading">
+            <div v-for="n in 5" :key="n" class="history-card neubrutal-box skeleton" style="min-height: 98px; margin-bottom: 12px; border-color: transparent !important;">
+              <!-- Empty for shimmer -->
+            </div>
+          </div>
+
+          <div v-else-if="filteredHistory.length === 0" class="empty-state neubrutal-box">
             <p>{{ searchQuery.trim() ? t('emptyHistorySearch') : t('emptyHistory') }}</p>
           </div>
 

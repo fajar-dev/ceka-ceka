@@ -591,11 +591,24 @@ const downloadBillAsPng = async () => {
 
     <!-- Loading Skeleton -->
     <main class="app-main" v-else-if="isLoading">
-      <div class="skeleton-loading-wrapper">
-        <div class="skeleton-card neubrutal-box"></div>
-        <div class="skeleton-card neubrutal-box" style="height: 100px;"></div>
-        <div class="skeleton-card neubrutal-box" style="height: 300px;"></div>
-      </div>
+      <section class="detail-content">
+        <!-- Summary Header Card Skeleton -->
+        <div class="bill-summary-card neubrutal-box bg-white skeleton" style="min-height: 220px; border-color: transparent !important; margin-bottom: 20px;">
+          <!-- Shimmer pulse summary card -->
+        </div>
+
+        <!-- Progress Card Skeleton -->
+        <div class="progress-section-card neubrutal-box bg-white skeleton" style="min-height: 90px; border-color: transparent !important; margin-bottom: 20px;">
+          <!-- Shimmer pulse progress card -->
+        </div>
+
+        <!-- Portions / Checklist Skeletons -->
+        <div class="shares-list-wrapper">
+          <div v-for="n in 3" :key="n" class="share-row-card neubrutal-box skeleton" style="min-height: 80px; margin-bottom: 12px; border-color: transparent !important;">
+            <!-- Shimmer pulse portion item -->
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Sticky Share/Back Actions Footer -->

@@ -29,9 +29,17 @@ const friendForm = ref({
 const showDeleteConfirmModal = ref(false)
 const friendIdToDelete = ref<string | number | null>(null)
 
-onMounted(() => {
+const isLoading = ref(true)
+
+onMounted(async () => {
   loadSettings()
-  loadFriends()
+  try {
+    await loadFriends()
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 // Search Logic
@@ -126,7 +134,13 @@ const confirmDelete = async () => {
         </div>
 
         <div class="friends-list">
-          <div v-if="filteredFriends.length === 0" class="empty-state neubrutal-box">
+          <div v-if="isLoading">
+            <div v-for="n in 4" :key="n" class="friend-card neubrutal-box skeleton" style="min-height: 72px; margin-bottom: 12px; border-color: transparent !important;">
+              <!-- Empty for shimmer -->
+            </div>
+          </div>
+
+          <div v-else-if="filteredFriends.length === 0" class="empty-state neubrutal-box">
             <p>{{ searchQuery.trim() ? t('searchFriendEmpty') : t('emptyFriends') }}</p>
           </div>
 

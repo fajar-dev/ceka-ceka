@@ -13,9 +13,9 @@ const { user, logout } = useCekaAuth()
 
 const isDropdownOpen = ref(false)
 
-// Summary data
 const unpaidAmount = ref(0)
 const unpaidBillCount = ref(0)
+const isLoading = ref(true)
 
 const loadSummary = async () => {
   try {
@@ -27,11 +27,19 @@ const loadSummary = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadSettings()
-  loadFriends()
-  loadHistory()
-  loadSummary()
+  try {
+    await Promise.all([
+      loadFriends(),
+      loadHistory(),
+      loadSummary()
+    ])
+  } catch (err) {
+    console.error('Error loading dashboard:', err)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 const getIconComponent = (type: string) => {
@@ -88,7 +96,10 @@ const formatDate = (dateStr: string) => {
     <main class="app-main">
       <!-- Summary / Illustration Card -->
       <section class="summary-section">
-        <div class="summary-card neubrutal-box bg-mint">
+        <div v-if="isLoading" class="summary-card neubrutal-box skeleton" style="border-color: transparent !important; min-height: 125px;">
+          <!-- Empty for background shimmer pulse -->
+        </div>
+        <div v-else class="summary-card neubrutal-box bg-mint">
           <div class="summary-content">
             <p class="summary-label">{{ t('unpaidBill') }}</p>
             <h2 class="summary-amount">{{ formatCurrency(unpaidAmount) }}</h2>
@@ -126,7 +137,14 @@ const formatDate = (dateStr: string) => {
           <NuxtLink to="/app/friend" class="see-all">{{ t('viewAll') }}</NuxtLink>
         </div>
         
-        <div v-if="listFriendsOnly.length === 0" class="friends-empty neubrutal-box">
+        <div v-if="isLoading" class="friends-scroll-container">
+          <div class="friend-item" v-for="n in 4" :key="n">
+            <div class="skeleton skeleton-circle" style="width: 64px; height: 64px; margin-bottom: 8px;"></div>
+            <div class="skeleton skeleton-text" style="width: 48px; height: 12px; margin: 0 auto; border-radius: 4px;"></div>
+          </div>
+        </div>
+
+        <div v-else-if="listFriendsOnly.length === 0" class="friends-empty neubrutal-box">
           <NuxtLink to="/app/friend" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
             <Plus :size="16" :stroke-width="3" />
             <span>{{ t('emptyFriends') }}</span>
@@ -149,7 +167,13 @@ const formatDate = (dateStr: string) => {
         </div>
         
         <div class="history-list">
-          <div v-if="history.length === 0" class="empty-state neubrutal-box" style="padding: 10px;">
+          <div v-if="isLoading">
+            <div v-for="n in 3" :key="n" class="history-card neubrutal-box skeleton" style="min-height: 78px; margin-bottom: 12px; border-color: transparent !important; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;">
+              <!-- Empty for shimmer -->
+            </div>
+          </div>
+
+          <div v-else-if="history.length === 0" class="empty-state neubrutal-box" style="padding: 10px;">
             <p>{{ t('noHistory') }}</p>
           </div>
           

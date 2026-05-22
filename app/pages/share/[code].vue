@@ -124,11 +124,30 @@ const getIconBg = (cat: string) => {
   <div class="share-page">
     <!-- Loading -->
     <main class="share-main" v-if="isLoading">
-      <div class="skeleton-loading-wrapper">
-        <div class="skeleton-card neubrutal-box"></div>
-        <div class="skeleton-card neubrutal-box" style="height: 100px;"></div>
-        <div class="skeleton-card neubrutal-box" style="height: 300px;"></div>
-      </div>
+      <header class="app-header" style="display: flex; justify-content: center; margin-bottom: 20px;">
+        <div class="logo-wrapper">
+          <img :src="theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'" alt="CekaCeka" class="app-logo" />
+        </div>
+      </header>
+
+      <section class="detail-content">
+        <!-- Summary Header Card Skeleton -->
+        <div class="bill-summary-card neubrutal-box bg-white skeleton" style="min-height: 220px; border-color: transparent !important; margin-bottom: 20px;">
+          <!-- Shimmer pulse summary card -->
+        </div>
+
+        <!-- Progress Card Skeleton -->
+        <div class="progress-section-card neubrutal-box bg-white skeleton" style="min-height: 90px; border-color: transparent !important; margin-bottom: 20px;">
+          <!-- Shimmer pulse progress card -->
+        </div>
+
+        <!-- Portions / Checklist Skeletons -->
+        <div class="shares-list-wrapper">
+          <div v-for="n in 3" :key="n" class="share-row-card neubrutal-box skeleton" style="min-height: 80px; margin-bottom: 12px; border-color: transparent !important;">
+            <!-- Shimmer pulse portion item -->
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Not Found -->
