@@ -5,7 +5,7 @@ let _db: any = null
 
 export const getDb = () => {
   if (!_db) {
-    const dbPath = join(process.cwd(), 'ceka.db')
+    const dbPath = process.env.DATABASE_PATH || join(process.cwd(), 'ceka.db')
     _db = new Database(dbPath)
     
     // Create users table
