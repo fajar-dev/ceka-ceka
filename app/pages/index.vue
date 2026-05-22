@@ -51,8 +51,6 @@ onUnmounted(() => {
         <p class="subtitle">{{ t('landingSubtitle') }}</p>
       </div>
 
-      <LandingTechBadges />
-
       <!-- Action Buttons -->
       <div class="action-buttons">
         <button class="neubrutal-btn primary" :disabled="isLoggingIn" @click="openGooglePopup" style="color: #000; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -64,9 +62,12 @@ onUnmounted(() => {
       <LandingFeatures />
 
       <footer class="landing-footer">
-        <NuxtLink to="/privacy" class="footer-link">Privacy Policy</NuxtLink>
-        <span class="footer-dot">•</span>
-        <NuxtLink to="/terms" class="footer-link">Terms of Service</NuxtLink>
+        <div class="footer-links">
+          <NuxtLink to="/privacy" class="footer-link">Privacy Policy</NuxtLink>
+          <span class="footer-dot">•</span>
+          <NuxtLink to="/terms" class="footer-link">Terms of Service</NuxtLink>
+        </div>
+        <span class="footer-text">&copy; {{ new Date().getFullYear() }} CekaCeka</span>
       </footer>
     </main>
   </div>
@@ -74,7 +75,7 @@ onUnmounted(() => {
 
 <style scoped>
 .main-content {
-  padding: 0 24px 100px;
+  padding: 0 24px 32px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -108,15 +109,27 @@ onUnmounted(() => {
   margin-top: auto;
   padding-top: 40px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 12px;
 }
 
+.footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-text,
 .footer-link {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-color-muted);
+}
+
+.footer-link {
   text-decoration: none;
   transition: color 0.2s;
 }

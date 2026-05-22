@@ -15,6 +15,7 @@ export default defineEventHandler((event) => {
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=code&` +
     `scope=${encodeURIComponent('openid profile email')}&` +
+    `prompt=select_account&` +
     `state=ceka_auth_state`
 
   return sendRedirect(event, googleAuthUrl)

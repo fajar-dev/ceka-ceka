@@ -302,7 +302,7 @@ const formatDate = (dateStr: string) => {
 }
 
 .app-main {
-  padding: 0 24px 100px;
+  padding: 0 24px 32px;
   display: flex;
   flex-direction: column;
   gap: 32px;

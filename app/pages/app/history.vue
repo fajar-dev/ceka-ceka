@@ -173,7 +173,7 @@ const visibleHistory = computed((): HistoryRecord[] => {
 
 <style scoped>
 .app-main {
-  padding: 0 24px 100px;
+  padding: 0 24px 32px;
   display: flex;
   flex-direction: column;
   gap: 28px;

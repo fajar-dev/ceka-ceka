@@ -1073,7 +1073,7 @@ const goToPreviewSplit = () => {
 }
 
 .app-main {
-  padding: 0 24px 100px;
+  padding: 0 24px 32px;
 }
 
 .bill-form {
@@ -2343,7 +2343,7 @@ const goToPreviewSplit = () => {
 
 @media (max-width: 420px) {
   .app-main {
-    padding: 0 12px 100px !important;
+    padding: 0 12px 32px !important;
   }
   
   .form-section-card {
