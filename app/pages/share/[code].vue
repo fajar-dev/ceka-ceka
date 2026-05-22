@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Calendar, ShoppingBag, Coins, CreditCard, Check, Users, ChevronDown, ChevronUp } from '@lucide/vue'
+import { Calendar, ShoppingBag, Coins, CreditCard, Check, Users, ChevronDown, ChevronUp, ArrowLeft } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
 
 definePageMeta({ layout: false })

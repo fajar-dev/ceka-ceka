@@ -15,6 +15,8 @@ export const getDb = () => {
         email TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
         avatar TEXT,
+        google_contacts_email TEXT,
+        google_contacts_synced_at TEXT,
         created_at TEXT NOT NULL
       )
     `)
@@ -28,6 +30,7 @@ export const getDb = () => {
         phone TEXT,
         email TEXT,
         avatar_bg TEXT,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )

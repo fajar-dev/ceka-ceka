@@ -6,6 +6,8 @@ export interface User {
   email: string
   name: string
   avatar: string
+  google_contacts_email?: string
+  google_contacts_synced_at?: string
   created_at: string
 }
 

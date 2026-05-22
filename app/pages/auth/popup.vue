@@ -6,7 +6,7 @@ onMounted(() => {
   const code = route.query.code as string
 
   if (window.opener) {
-    window.opener.postMessage({ type: 'ceka_auth', status, code }, window.location.origin)
+    window.opener.postMessage({ type: 'ceka_auth', status, code, query: route.query }, window.location.origin)
     window.close()
   } else {
     navigateTo(status === 'success' ? '/app' : '/')

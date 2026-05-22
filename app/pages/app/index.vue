@@ -149,7 +149,7 @@ const formatDate = (dateStr: string) => {
         </div>
         
         <div class="history-list">
-          <div v-if="history.length === 0" class="empty-state neubrutal-box">
+          <div v-if="history.length === 0" class="empty-state neubrutal-box" style="padding: 10px;">
             <p>{{ t('noHistory') }}</p>
           </div>
           

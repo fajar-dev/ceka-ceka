@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const deleteStmt = db.prepare('DELETE FROM friends WHERE id = ?')
+    const deleteStmt = db.prepare('UPDATE friends SET is_deleted = 1 WHERE id = ?')
     deleteStmt.run(id)
 
     return { success: true }
