@@ -152,7 +152,7 @@ const formatDate = (dateStr: string) => {
         </div>
 
         <div v-else class="friends-scroll-container">
-          <div class="friend-item" v-for="friend in listFriendsOnly" :key="friend.id">
+          <div class="friend-item" v-for="friend in listFriendsOnly.slice(0, 10)" :key="friend.id">
             <FriendAvatar :name="friend.name" :avatar-bg="friend.avatarBg" size="xl" />
             <span class="friend-name">{{ friend.name.split(' ')[0] }}</span>
           </div>
@@ -179,7 +179,7 @@ const formatDate = (dateStr: string) => {
           
           <div 
             v-else 
-            v-for="item in history.slice(0, 3)" 
+            v-for="item in history.slice(0, 10)" 
             :key="item.id" 
             class="history-card neubrutal-box"
             @click="useRouter().push(`/app/bill/${item.id}`)"
