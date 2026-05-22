@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { Plus, Trash2, Edit2, X, Search, Phone, Mail, UserPlus } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
 import { useCekaFriends } from '~/composables/useCekaFriends'
@@ -30,9 +30,23 @@ const showDeleteConfirmModal = ref(false)
 const friendIdToDelete = ref<string | number | null>(null)
 
 const isLoading = ref(true)
+const itemsToShow = ref(10)
+
+const handleScroll = () => {
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const clientHeight = document.documentElement.clientHeight
+  
+  if (scrollTop + clientHeight >= scrollHeight - 120) {
+    if (itemsToShow.value < filteredFriends.value.length) {
+      itemsToShow.value += 10
+    }
+  }
+}
 
 onMounted(async () => {
   loadSettings()
+  window.addEventListener('scroll', handleScroll)
   try {
     await loadFriends()
   } catch (err) {
@@ -42,12 +56,24 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+watch(searchQuery, () => {
+  itemsToShow.value = 10
+})
+
 // Search Logic
 const filteredFriends = computed((): Friend[] => {
   const list = listFriendsOnly.value
   if (!searchQuery.value.trim()) return list
   const query = searchQuery.value.toLowerCase().trim()
   return list.filter(f => f.name.toLowerCase().includes(query))
+})
+
+const visibleFriends = computed((): Friend[] => {
+  return filteredFriends.value.slice(0, itemsToShow.value)
 })
 
 // Modal Logic
@@ -146,7 +172,7 @@ const confirmDelete = async () => {
 
           <div 
             v-else 
-            v-for="friend in filteredFriends" 
+            v-for="friend in visibleFriends" 
             :key="friend.id" 
             class="friend-card neubrutal-box"
           >

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { Search, Pizza, Coffee, FileText, Calendar, Users } from '@lucide/vue'
 import { useCekaSettings } from '~/composables/useCekaSettings'
 import { useCekaHistory } from '~/composables/useCekaHistory'
@@ -18,9 +18,23 @@ const iconOptions = [
 ]
 
 const isLoading = ref(true)
+const itemsToShow = ref(10)
+
+const handleScroll = () => {
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const clientHeight = document.documentElement.clientHeight
+  
+  if (scrollTop + clientHeight >= scrollHeight - 120) {
+    if (itemsToShow.value < filteredHistory.value.length) {
+      itemsToShow.value += 10
+    }
+  }
+}
 
 onMounted(async () => {
   loadSettings()
+  window.addEventListener('scroll', handleScroll)
   try {
     await loadHistory()
   } catch (err) {
@@ -28,6 +42,14 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+watch(searchQuery, () => {
+  itemsToShow.value = 10
 })
 
 const getIconComponent = (type: string) => {
@@ -61,6 +83,10 @@ const filteredHistory = computed((): HistoryRecord[] => {
   if (!searchQuery.value.trim()) return list
   const query = searchQuery.value.toLowerCase().trim()
   return list.filter(item => item.title.toLowerCase().includes(query))
+})
+
+const visibleHistory = computed((): HistoryRecord[] => {
+  return filteredHistory.value.slice(0, itemsToShow.value)
 })
 </script>
 
@@ -101,7 +127,7 @@ const filteredHistory = computed((): HistoryRecord[] => {
 
           <div 
             v-else 
-            v-for="item in filteredHistory" 
+            v-for="item in visibleHistory" 
             :key="item.id" 
             class="history-card neubrutal-box"
             @click="useRouter().push(`/app/bill/${item.id}`)"
