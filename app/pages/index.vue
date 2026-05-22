@@ -62,6 +62,12 @@ onUnmounted(() => {
       </div>
 
       <LandingFeatures />
+
+      <footer class="landing-footer">
+        <NuxtLink to="/privacy" class="footer-link">Privacy Policy</NuxtLink>
+        <span class="footer-dot">•</span>
+        <NuxtLink to="/terms" class="footer-link">Terms of Service</NuxtLink>
+      </footer>
     </main>
   </div>
 </template>
@@ -96,5 +102,32 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 16px;
   margin-bottom: 32px;
+}
+
+.landing-footer {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-link {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-color-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--text-color);
+  text-decoration: underline;
+}
+
+.footer-dot {
+  color: var(--text-color-muted);
+  font-size: 0.85rem;
 }
 </style>
